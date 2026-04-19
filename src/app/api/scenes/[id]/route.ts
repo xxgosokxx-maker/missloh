@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { scenes, stories } from "@/lib/db/schema";
 import { generateSceneAudio, type VoiceGender } from "@/lib/ai";
+import { isOwnBlobUrl } from "@/lib/blob";
 
 export async function PATCH(
   req: Request,
@@ -25,6 +26,9 @@ export async function PATCH(
 
   if (!newSubtitle && !providedAudioUrl) {
     return new NextResponse("subtitle or audioUrl required", { status: 400 });
+  }
+  if (providedAudioUrl && !isOwnBlobUrl(providedAudioUrl)) {
+    return new NextResponse("Invalid audioUrl", { status: 400 });
   }
 
   const [row] = await db
