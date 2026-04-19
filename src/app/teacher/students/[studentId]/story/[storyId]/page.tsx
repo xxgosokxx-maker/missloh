@@ -11,6 +11,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { StoryPlayer } from "@/components/StoryPlayer";
+import { EvaluateStoryButton } from "@/components/EvaluateStoryButton";
 import { displayName } from "@/lib/names";
 
 export default async function TeacherReviewPage({
@@ -55,11 +56,17 @@ export default async function TeacherReviewPage({
 
   const recs = assignment
     ? await db
-        .select()
+        .select({
+          sceneId: recordings.sceneId,
+          audioUrl: recordings.audioUrl,
+          aiScore: recordings.aiScore,
+          aiFeedback: recordings.aiFeedback,
+          aiTranscript: recordings.aiTranscript,
+        })
         .from(recordings)
         .where(eq(recordings.assignmentId, assignment.id))
     : [];
-  const recBySceneId = new Map(recs.map((r) => [r.sceneId, r.audioUrl]));
+  const recBySceneId = new Map(recs.map((r) => [r.sceneId, r]));
 
   return (
     <div className="space-y-6">
@@ -79,15 +86,26 @@ export default async function TeacherReviewPage({
         <div className="mt-1 text-sm text-ink-600">
           on <span className="font-medium text-ink-800">{story.title}</span>
         </div>
+        {assignment && (
+          <div className="mt-4">
+            <EvaluateStoryButton assignmentId={assignment.id} />
+          </div>
+        )}
       </div>
       <StoryPlayer
-        scenes={sceneRows.map((s) => ({
-          id: s.id,
-          subtitle: s.subtitle,
-          imageUrl: s.imageUrl,
-          audioUrl: s.audioUrl,
-          studentAudioUrl: recBySceneId.get(s.id) ?? null,
-        }))}
+        scenes={sceneRows.map((s) => {
+          const rec = recBySceneId.get(s.id);
+          return {
+            id: s.id,
+            subtitle: s.subtitle,
+            imageUrl: s.imageUrl,
+            audioUrl: s.audioUrl,
+            studentAudioUrl: rec?.audioUrl ?? null,
+            aiScore: rec?.aiScore ?? null,
+            aiFeedback: rec?.aiFeedback ?? null,
+            aiTranscript: rec?.aiTranscript ?? null,
+          };
+        })}
         mode="review"
       />
     </div>

@@ -173,6 +173,10 @@ export const recordings = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     audioUrl: text("audio_url").notNull(),
     recordedAt: timestamp("recorded_at", { mode: "date" }).defaultNow().notNull(),
+    aiScore: integer("ai_score"),
+    aiFeedback: text("ai_feedback"),
+    aiTranscript: text("ai_transcript"),
+    aiEvaluatedAt: timestamp("ai_evaluated_at", { mode: "date" }),
   },
   (t) => ({
     uniqAssignmentScene: uniqueIndex("recordings_assignment_scene_uniq").on(
