@@ -6,7 +6,7 @@ export async function TopBar() {
   const initial = session?.user?.name?.[0]?.toUpperCase() ?? "·";
   return (
     <header className="sticky top-0 z-30 border-b border-ink-100/70 bg-white/60 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-glow">
             <span className="font-display text-lg leading-none">M</span>

@@ -245,7 +245,7 @@ export function StoryPlayer(props: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="card space-y-6 p-6 sm:p-8">
+      <div className="card space-y-6 p-4 sm:p-8">
         <div className="flex items-center justify-between">
           <span className="badge">
             Scene {idx + 1} of {scenes.length}
@@ -419,18 +419,22 @@ export function StoryPlayer(props: Props) {
         >
           <span aria-hidden>←</span> Previous
         </button>
-        <div className="flex gap-1.5">
+        <div className="flex">
           {scenes.map((_, i) => (
             <button
               key={i}
               onClick={() => setIdx(i)}
               aria-label={`Jump to scene ${i + 1}`}
-              className={`h-2 w-2 rounded-full transition ${
-                i === idx
-                  ? "w-6 bg-brand-500"
-                  : "bg-ink-200 hover:bg-ink-300"
-              }`}
-            />
+              className="group grid h-10 min-w-10 place-items-center"
+            >
+              <span
+                className={`block h-2 rounded-full transition ${
+                  i === idx
+                    ? "w-6 bg-brand-500"
+                    : "w-2 bg-ink-200 group-hover:bg-ink-300"
+                }`}
+              />
+            </button>
           ))}
         </div>
         {idx === scenes.length - 1 ? (

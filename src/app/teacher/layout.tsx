@@ -10,12 +10,12 @@ export default function TeacherLayout({
     <div className="min-h-screen">
       <TopBar />
       <nav className="border-b border-ink-100/70 bg-white/40 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-1 px-6">
+        <div className="mx-auto flex max-w-6xl items-center gap-1 px-4 sm:px-6">
           <TabLink href="/teacher">Stories</TabLink>
           <TabLink href="/teacher/students">Students</TabLink>
         </div>
       </nav>
-      <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
     </div>
   );
 }
