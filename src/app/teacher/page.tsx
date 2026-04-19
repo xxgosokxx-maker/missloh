@@ -9,6 +9,8 @@ import { RemixStoryButton } from "@/components/RemixStoryButton";
 import { ArchiveStoryButton } from "@/components/ArchiveStoryButton";
 import { AssignStoryToStudentForm } from "@/components/AssignStoryToStudentForm";
 import { ClickBarrier } from "@/components/ClickBarrier";
+import { Chevron } from "@/components/Chevron";
+import { Pill } from "@/components/Pill";
 import {
   StoryLibraryToolbar,
   type SortKey,
@@ -34,28 +36,28 @@ export default async function TeacherStoriesPage({
   const sort = parseSort(searchParams.sort);
   const showArchived = searchParams.archived === "1";
 
-  const allStories = await db
-    .select()
-    .from(stories)
-    .where(eq(stories.creatorId, session!.user.id));
-
-  const studentRows = await db
-    .select({ id: users.id, name: users.name })
-    .from(users)
-    .where(eq(users.role, "student"));
+  const [allStories, studentRows, myAssignments] = await Promise.all([
+    db
+      .select()
+      .from(stories)
+      .where(eq(stories.creatorId, session!.user.id)),
+    db
+      .select({ id: users.id, name: users.name })
+      .from(users)
+      .where(eq(users.role, "student")),
+    db
+      .select({
+        studentId: assignments.studentId,
+        storyId: assignments.storyId,
+      })
+      .from(assignments)
+      .where(eq(assignments.assignedBy, session!.user.id)),
+  ]);
 
   const students = studentRows.map((s) => ({
     id: s.id,
     name: displayName(s.name),
   }));
-
-  const myAssignments = await db
-    .select({
-      studentId: assignments.studentId,
-      storyId: assignments.storyId,
-    })
-    .from(assignments)
-    .where(eq(assignments.assignedBy, session!.user.id));
 
   const assignedByStory = new Map<string, string[]>();
   for (const a of myAssignments) {
@@ -63,30 +65,19 @@ export default async function TeacherStoriesPage({
     list.push(a.studentId);
     assignedByStory.set(a.storyId, list);
   }
+  const countOf = (s: Story) => assignedByStory.get(s.id)?.length ?? 0;
 
   const active = allStories.filter((s) => !s.archivedAt);
   const archived = allStories.filter((s) => !!s.archivedAt);
-  const unassignedCount = active.filter(
-    (s) => (assignedByStory.get(s.id)?.length ?? 0) === 0
-  ).length;
+  const unassignedCount = active.filter((s) => countOf(s) === 0).length;
 
   function sortStories(list: Story[]): Story[] {
-    const withCounts = list.map((s) => ({
-      s,
-      count: assignedByStory.get(s.id)?.length ?? 0,
-    }));
-    if (sort === "least-assigned") {
-      withCounts.sort(
-        (a, b) => a.count - b.count || a.s.difficulty - b.s.difficulty
-      );
-    } else if (sort === "newest") {
-      withCounts.sort(
-        (a, b) => b.s.createdAt.getTime() - a.s.createdAt.getTime()
-      );
-    } else {
-      withCounts.sort((a, b) => a.s.difficulty - b.s.difficulty);
-    }
-    return withCounts.map((x) => x.s);
+    return [...list].sort((a, b) => {
+      if (sort === "newest") return b.createdAt.getTime() - a.createdAt.getTime();
+      if (sort === "least-assigned")
+        return countOf(a) - countOf(b) || a.difficulty - b.difficulty;
+      return a.difficulty - b.difficulty;
+    });
   }
 
   const activeByLanguage = new Map<string, Story[]>();
@@ -102,14 +93,16 @@ export default async function TeacherStoriesPage({
   const languageGroups = Array.from(activeByLanguage.entries()).sort(
     ([a], [b]) => a.localeCompare(b)
   );
-  const defaultOpenLang =
+  const biggestLang = [...languageGroups].sort(
+    ([, a], [, b]) => b.length - a.length
+  )[0]?.[0];
+  const defaultOpenLang = new Set(
     languageGroups.length < 3
-      ? new Set(languageGroups.map(([l]) => l))
-      : new Set([
-          languageGroups
-            .slice()
-            .sort(([, a], [, b]) => b.length - a.length)[0]?.[0] ?? "",
-        ]);
+      ? languageGroups.map(([l]) => l)
+      : biggestLang
+        ? [biggestLang]
+        : []
+  );
 
   return (
     <div className="space-y-8">
@@ -122,16 +115,14 @@ export default async function TeacherStoriesPage({
             <p className="mt-1 text-sm text-ink-500">
               <span className="font-medium text-ink-700">{active.length}</span>{" "}
               active
-              {archived.length > 0 && (
-                <>
-                  {" "}
-                  · {archived.length} archived
-                </>
-              )}
+              {archived.length > 0 && <> · {archived.length} archived</>}
               {unassignedCount > 0 && (
                 <>
                   {" "}
-                  · <span className="text-amber-700">{unassignedCount} unassigned</span>
+                  ·{" "}
+                  <span className="text-amber-700">
+                    {unassignedCount} unassigned
+                  </span>
                 </>
               )}
             </p>
@@ -162,9 +153,7 @@ export default async function TeacherStoriesPage({
         ) : (
           <div className="space-y-4">
             {languageGroups.map(([language, list]) => {
-              const groupUnassigned = list.filter(
-                (s) => (assignedByStory.get(s.id)?.length ?? 0) === 0
-              ).length;
+              const groupUnassigned = list.filter((s) => countOf(s) === 0).length;
               return (
                 <details
                   key={language}
@@ -172,26 +161,13 @@ export default async function TeacherStoriesPage({
                   className="group rounded-3xl border border-ink-100 bg-white/60 backdrop-blur-sm"
                 >
                   <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
-                    <svg
-                      className="h-4 w-4 shrink-0 text-ink-400 transition group-open:rotate-180"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <Chevron className="group-open:rotate-180" />
                     <span className="font-display text-lg tracking-tight text-ink-900">
                       {language}
                     </span>
                     <span className="badge">{list.length}</span>
                     {groupUnassigned > 0 && (
-                      <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-amber-700">
-                        {groupUnassigned} unassigned
-                      </span>
+                      <Pill tone="amber">{groupUnassigned} unassigned</Pill>
                     )}
                   </summary>
                   <ul className="grid gap-2 border-t border-ink-100 px-3 py-3 sm:grid-cols-2">
@@ -211,18 +187,7 @@ export default async function TeacherStoriesPage({
             {showArchived && archived.length > 0 && (
               <details className="group rounded-3xl border border-ink-100 bg-ink-50/60 backdrop-blur-sm">
                 <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
-                  <svg
-                    className="h-4 w-4 shrink-0 text-ink-400 transition group-open:rotate-180"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <Chevron className="group-open:rotate-180" />
                   <span className="font-display text-lg tracking-tight text-ink-700">
                     Archived
                   </span>
@@ -275,14 +240,12 @@ function StoryCard({
               <span>·</span>
               <span className="truncate">{story.imageStyle}</span>
               {isUnassigned && (
-                <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide text-amber-700">
+                <Pill tone="amber" size="xs">
                   Unassigned
-                </span>
+                </Pill>
               )}
               {assigned.length > 0 && (
-                <span className="inline-flex items-center rounded-full border border-ink-200 bg-white/80 px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide text-ink-600">
-                  {assigned.length} assigned
-                </span>
+                <Pill size="xs">{assigned.length} assigned</Pill>
               )}
             </div>
           </div>
@@ -291,18 +254,7 @@ function StoryCard({
             <ArchiveStoryButton id={story.id} archived={isArchived} />
             <DeleteStoryButton id={story.id} />
           </ClickBarrier>
-          <svg
-            className="h-4 w-4 shrink-0 text-ink-400 transition group-open/card:rotate-180"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden
-          >
-            <path
-              fillRule="evenodd"
-              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <Chevron className="group-open/card:rotate-180" />
         </summary>
         <div className="space-y-3 border-t border-ink-100 px-3 py-3">
           <AssignStoryToStudentForm

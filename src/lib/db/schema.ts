@@ -154,6 +154,7 @@ export const assignments = pgTable(
       t.studentId,
       t.storyId
     ),
+    assignedByIdx: index("assignments_assigned_by_idx").on(t.assignedBy),
   })
 );
 
