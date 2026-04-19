@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { stories } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
-import { StoryGenerator } from "@/components/StoryGenerator";
 import { DeleteStoryButton } from "@/components/DeleteStoryButton";
 import { RenameStoryButton } from "@/components/RenameStoryButton";
 import { RemixStoryButton } from "@/components/RemixStoryButton";
@@ -19,38 +18,36 @@ export default async function TeacherStoriesPage() {
     .orderBy(desc(stories.createdAt));
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
       <section>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-3xl tracking-tight text-ink-900">
-              Generate a new story
+              Your stories
             </h2>
             <p className="mt-1 text-sm text-ink-500">
-              Pick a language, art style, and difficulty. We'll draft scenes,
-              illustrate them, and narrate them in a natural voice.
+              {myStories.length} total
             </p>
           </div>
-          <Link
-            href="/teacher/stories/upload"
-            className="rounded-2xl border border-ink-200 bg-white/80 px-4 py-2 text-sm font-medium text-ink-700 shadow-soft transition hover:bg-white hover:text-brand-600"
-          >
-            Upload your own story →
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/teacher/stories/new"
+              className="btn-primary"
+            >
+              Generate a new story →
+            </Link>
+            <Link
+              href="/teacher/stories/upload"
+              className="rounded-2xl border border-ink-200 bg-white/80 px-4 py-2 text-sm font-medium text-ink-700 shadow-soft transition hover:bg-white hover:text-brand-600"
+            >
+              Upload your own story →
+            </Link>
+          </div>
         </div>
-        <StoryGenerator />
-      </section>
 
-      <section>
-        <div className="mb-5 flex items-end justify-between">
-          <h2 className="font-display text-3xl tracking-tight text-ink-900">
-            Your stories
-          </h2>
-          <span className="badge">{myStories.length} total</span>
-        </div>
         {myStories.length === 0 ? (
           <div className="card text-center text-ink-500">
-            No stories yet. Generate your first one above.
+            No stories yet. Generate or upload your first one above.
           </div>
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2">
