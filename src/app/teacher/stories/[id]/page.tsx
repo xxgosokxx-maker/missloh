@@ -43,9 +43,6 @@ export default async function TeacherStoryPage({
           <span className="badge">Lv {story.difficulty}</span>
           <span className="badge">{story.imageStyle}</span>
         </div>
-        <p className="mt-3 max-w-2xl text-sm text-ink-600">
-          {story.description}
-        </p>
       </div>
       <StoryPlayer
         scenes={sceneRows.map((s) => ({

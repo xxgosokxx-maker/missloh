@@ -311,7 +311,7 @@ export function StoryPlayer(props: Props) {
             </div>
           ) : (
             <p
-              className="text-center font-display leading-[1.1] tracking-tight text-ink-900"
+              className="whitespace-pre-line text-center font-display leading-[1.1] tracking-tight text-ink-900"
               style={{ fontSize: "clamp(1.75rem, 4vw, 3rem)" }}
             >
               {scene.subtitle}
