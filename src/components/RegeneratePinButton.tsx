@@ -38,9 +38,9 @@ export function RegeneratePinButton({
       <button
         onClick={onClick}
         disabled={pending}
-        className="text-xs font-medium text-ink-500 transition hover:text-brand-600 disabled:opacity-50"
+        className="whitespace-nowrap text-xs font-medium text-ink-500 transition hover:text-brand-600 disabled:opacity-50"
       >
-        {pending ? "Working…" : "Regenerate PIN"}
+        {pending ? "…" : "Reset PIN"}
       </button>
       {reveal && (
         <PinRevealModal
