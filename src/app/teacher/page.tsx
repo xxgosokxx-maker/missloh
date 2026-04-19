@@ -21,7 +21,7 @@ export default async function TeacherStoriesPage() {
   return (
     <div className="space-y-12">
       <section>
-        <div className="mb-5 flex items-end justify-between">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-3xl tracking-tight text-ink-900">
               Generate a new story
@@ -31,6 +31,12 @@ export default async function TeacherStoriesPage() {
               illustrate them, and narrate them in a natural voice.
             </p>
           </div>
+          <Link
+            href="/teacher/stories/upload"
+            className="rounded-2xl border border-ink-200 bg-white/80 px-4 py-2 text-sm font-medium text-ink-700 shadow-soft transition hover:bg-white hover:text-brand-600"
+          >
+            Upload your own story →
+          </Link>
         </div>
         <StoryGenerator />
       </section>
