@@ -31,7 +31,8 @@ export default async function SignInPage() {
           Welcome back.
         </h1>
         <p className="mt-2 text-sm text-ink-600">
-          Google is the only supported sign-in method.
+          Teachers and older students sign in with Google. Younger students
+          without a Google account can use a class code and PIN.
         </p>
 
         <form
@@ -66,6 +67,19 @@ export default async function SignInPage() {
             Continue with Google
           </button>
         </form>
+
+        <div className="my-6 flex items-center gap-3 text-[11px] uppercase tracking-wide text-ink-500">
+          <span className="h-px flex-1 bg-ink-200" />
+          or
+          <span className="h-px flex-1 bg-ink-200" />
+        </div>
+
+        <Link
+          href="/auth/signin/student"
+          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm font-medium text-ink-800 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+        >
+          I'm a student (class code + PIN)
+        </Link>
 
         <p className="mt-6 text-center text-[11px] uppercase tracking-wide text-ink-500">
           By signing in you accept our terms
