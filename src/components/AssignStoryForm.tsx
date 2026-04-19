@@ -22,11 +22,11 @@ export function AssignStoryForm({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <select
         value={pick}
         onChange={(e) => setPick(e.target.value)}
-        className="input !mt-0 !w-auto min-w-[10rem]"
+        className="input !mt-0 w-full sm:!w-auto sm:min-w-[10rem]"
       >
         {available.map((s) => (
           <option key={s.id} value={s.id}>
