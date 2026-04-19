@@ -411,21 +411,22 @@ export function StoryPlayer(props: Props) {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <button
           onClick={() => setIdx((i) => Math.max(0, i - 1))}
           disabled={idx === 0}
-          className="btn-secondary disabled:opacity-40"
+          className="btn-secondary shrink-0 disabled:opacity-40"
         >
-          <span aria-hidden>←</span> Previous
+          <span aria-hidden>←</span>
+          <span className="hidden sm:inline"> Previous</span>
         </button>
-        <div className="flex">
+        <div className="flex min-w-0 flex-1 justify-center overflow-x-auto">
           {scenes.map((_, i) => (
             <button
               key={i}
               onClick={() => setIdx(i)}
               aria-label={`Jump to scene ${i + 1}`}
-              className="group grid h-10 min-w-10 place-items-center"
+              className="group grid h-10 min-w-6 place-items-center sm:min-w-10"
             >
               <span
                 className={`block h-2 rounded-full transition ${
@@ -438,15 +439,16 @@ export function StoryPlayer(props: Props) {
           ))}
         </div>
         {idx === scenes.length - 1 ? (
-          <button onClick={() => router.back()} className="btn-primary">
+          <button onClick={() => router.back()} className="btn-primary shrink-0">
             Exit <span aria-hidden>↩</span>
           </button>
         ) : (
           <button
             onClick={() => setIdx((i) => Math.min(scenes.length - 1, i + 1))}
-            className="btn-secondary"
+            className="btn-secondary shrink-0"
           >
-            Next <span aria-hidden>→</span>
+            <span className="hidden sm:inline">Next </span>
+            <span aria-hidden>→</span>
           </button>
         )}
       </div>
