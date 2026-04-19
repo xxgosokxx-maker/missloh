@@ -15,59 +15,57 @@
       --ink-500: #64748b;
       --ink-100: #e2e8f0;
       --ink-50: #f8fafc;
-      --bg: #fafafa;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       color: var(--ink-700);
-      background: var(--bg);
-      line-height: 1.6;
+      background: #fafafa;
+      line-height: 1.45;
       -webkit-font-smoothing: antialiased;
     }
-    main {
-      max-width: 760px;
+    .page {
+      max-width: 720px;
       margin: 0 auto;
-      padding: 48px 24px 80px;
+      padding: 24px 28px;
     }
-    .hero {
-      text-align: center;
-      padding: 32px 0 48px;
-      border-bottom: 1px solid var(--ink-100);
-      margin-bottom: 40px;
-    }
-    .logo {
-      display: inline-flex;
+    header {
+      display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid var(--ink-100);
+      margin-bottom: 16px;
     }
+    .logo { display: flex; align-items: center; gap: 9px; }
     .logo-mark {
       display: grid;
       place-items: center;
-      width: 40px; height: 40px;
-      border-radius: 12px;
+      width: 34px; height: 34px;
+      border-radius: 10px;
       background: linear-gradient(135deg, var(--brand), var(--brand-dark));
       color: #fff;
       font-weight: 700;
-      font-size: 18px;
-      box-shadow: 0 8px 24px -8px rgba(99, 102, 241, 0.5);
+      font-size: 15px;
     }
     .logo-text {
-      font-size: 17px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
       color: var(--ink-900);
       letter-spacing: -0.01em;
+      line-height: 1.1;
     }
     .logo-text span { color: var(--brand); }
     h1 {
       margin: 0;
-      font-size: clamp(2rem, 5vw, 3rem);
+      font-size: 22px;
       font-weight: 800;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.02em;
       color: var(--ink-900);
-      line-height: 1.05;
+      text-align: right;
+      line-height: 1.15;
     }
     h1 .gradient {
       background: linear-gradient(135deg, var(--brand), var(--brand-dark));
@@ -76,127 +74,175 @@
       color: transparent;
     }
     .tagline {
-      margin: 16px auto 0;
-      max-width: 520px;
-      font-size: 17px;
+      font-size: 12.5px;
       color: var(--ink-500);
+      margin: 0 0 18px;
+      text-align: center;
+      font-style: italic;
     }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+    }
+    .section { break-inside: avoid; }
+    .section.full { grid-column: 1 / -1; }
     h2 {
-      margin: 40px 0 16px;
-      font-size: 20px;
+      margin: 0 0 6px;
+      font-size: 12px;
       font-weight: 700;
       color: var(--ink-900);
-      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 7px;
     }
     h2 .icon {
-      display: grid;
+      display: inline-grid;
       place-items: center;
-      width: 30px; height: 30px;
-      border-radius: 8px;
+      width: 18px; height: 18px;
+      border-radius: 5px;
       background: var(--ink-50);
-      font-size: 16px;
+      font-size: 11px;
+      border: 1px solid var(--ink-100);
     }
     ul {
       list-style: none;
       padding: 0;
       margin: 0;
       display: grid;
-      gap: 10px;
+      gap: 4px;
     }
     li {
-      padding: 14px 18px;
+      padding: 6px 10px;
       background: #fff;
       border: 1px solid var(--ink-100);
-      border-radius: 14px;
-      font-size: 15px;
+      border-radius: 7px;
+      font-size: 11.5px;
+      line-height: 1.35;
     }
     li strong {
       color: var(--ink-900);
       font-weight: 600;
     }
     .highlight {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(245, 158, 11, 0.06));
-      border: 1px solid rgba(99, 102, 241, 0.2);
+      background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(245,158,11,0.06));
+      border-color: rgba(99,102,241,0.25);
     }
-    .cta {
-      text-align: center;
-      margin-top: 56px;
-      padding-top: 32px;
-      border-top: 1px solid var(--ink-100);
+    .ai-panel {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.07), rgba(245,158,11,0.07));
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 10px;
     }
-    .cta a {
-      display: inline-block;
-      background: linear-gradient(135deg, var(--brand), var(--brand-dark));
-      color: #fff;
-      padding: 12px 28px;
-      border-radius: 999px;
-      font-weight: 600;
-      text-decoration: none;
-      box-shadow: 0 12px 32px -12px rgba(99, 102, 241, 0.6);
-      transition: transform 0.2s;
+    .ai-panel h2 { margin-bottom: 6px; }
+    .ai-panel ul { grid-template-columns: 1fr 1fr 1fr; display: grid; gap: 6px; }
+    .ai-panel li {
+      background: rgba(255,255,255,0.7);
+      border-color: rgba(99,102,241,0.15);
     }
-    .cta a:hover { transform: translateY(-1px); }
     footer {
-      margin-top: 48px;
-      text-align: center;
-      font-size: 12px;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid var(--ink-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10.5px;
       color: var(--ink-500);
+    }
+    footer a {
+      color: var(--brand);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    /* Print: US Letter, single page, clean colours */
+    @page { size: letter; margin: 0.4in; }
+    @media print {
+      html, body { background: #fff; }
+      .page { max-width: 100%; padding: 0; }
+      li, .ai-panel { box-shadow: none; }
+      a { color: var(--ink-900); }
+    }
+
+    @media (max-width: 520px) {
+      .grid, .ai-panel ul { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; }
+      h1 { text-align: left; }
     }
   </style>
 </head>
 <body>
-  <main>
-    <section class="hero">
+  <div class="page">
+    <header>
       <div class="logo">
         <span class="logo-mark">M</span>
-        <span class="logo-text">Miss Loh's <span>Language Master</span></span>
+        <span class="logo-text">Miss Loh's<br /><span>Language Master</span></span>
       </div>
       <h1>Read. Listen.<br /><span class="gradient">Find your voice.</span></h1>
-      <p class="tagline">
-        AI-powered language learning through personalised picture books, native-voice narration, and smart pronunciation feedback.
-      </p>
-    </section>
+    </header>
 
-    <h2><span class="icon">👩‍🏫</span>For Teachers</h2>
-    <ul>
-      <li><strong>Generate picture books from a prompt</strong> — title, description, difficulty, language, art style, voice. The system writes, illustrates, and narrates every scene.</li>
-      <li><strong>15 art styles</strong> — Ghibli, Disney, Marvel, Ukiyo-e, Sanrio, Pokemon, and more.</li>
-      <li><strong>Upload your own books</strong> — bring existing page images and get native-voice narration generated for you.</li>
-      <li><strong>Remix &amp; edit</strong> — clone any story; modify captions with or without regenerating the audio; re-record voiceovers in your own voice.</li>
-      <li><strong>Manage students with PINs</strong> — no emails needed. One click creates a student and reveals a 6-digit PIN.</li>
-      <li><strong>Assign stories</strong> and <strong>review recordings</strong> scene-by-scene.</li>
-    </ul>
+    <p class="tagline">
+      AI-powered language learning · personalised picture books · native-voice narration · smart pronunciation feedback
+    </p>
 
-    <h2><span class="icon">🤖</span>AI Pronunciation Scoring</h2>
-    <ul>
-      <li class="highlight"><strong>One-click "Evaluate story"</strong> — grades every student recording in parallel against the gold subtitle.</li>
-      <li class="highlight"><strong>Per-scene score (1–5)</strong> with a concrete coaching tip in English, plus a transcript of what the AI heard.</li>
-      <li class="highlight"><strong>Auto star rating</strong> — the assignment's overall rating is set from the average AI score (manual override always available).</li>
-    </ul>
+    <div class="grid">
+      <div class="section">
+        <h2><span class="icon">👩‍🏫</span>For Teachers</h2>
+        <ul>
+          <li><strong>Generate picture books</strong> from a prompt — text, art, voice.</li>
+          <li><strong>15 art styles</strong> — Ghibli, Disney, Sanrio, Pokemon, and more.</li>
+          <li><strong>Upload your own books</strong> and get native narration.</li>
+          <li><strong>Remix &amp; edit</strong> — modify captions, re-record voiceover.</li>
+          <li><strong>PIN student accounts</strong> — no emails, one-click setup.</li>
+        </ul>
+      </div>
 
-    <h2><span class="icon">👦</span>For Students</h2>
-    <ul>
-      <li><strong>Sign in with a 6-digit PIN</strong> — no email, no password.</li>
-      <li><strong>Illustrated storybook reader</strong> — tap to listen in native voice, tap to record yourself reading.</li>
-      <li><strong>Earn stars</strong> on every assignment and climb the <strong>class leaderboard</strong>.</li>
-      <li><strong>Mobile-first</strong> — works on any phone with a microphone.</li>
-    </ul>
+      <div class="section">
+        <h2><span class="icon">👦</span>For Students</h2>
+        <ul>
+          <li><strong>Sign in with a 6-digit PIN</strong> — no email or password.</li>
+          <li><strong>Illustrated reader</strong> — tap to listen, tap to record.</li>
+          <li><strong>Earn stars</strong> and climb the class leaderboard.</li>
+          <li><strong>Mobile-first</strong> — works on any phone with a mic.</li>
+          <li><strong>Instant playback</strong> to compare against the native voice.</li>
+        </ul>
+      </div>
+    </div>
 
-    <h2><span class="icon">🌏</span>Supported Languages</h2>
-    <ul>
-      <li><strong>French</strong> and <strong>Mandarin (Traditional Chinese)</strong> — with male or female native narrator voices.</li>
-    </ul>
+    <div class="ai-panel">
+      <h2><span class="icon">🤖</span>AI Pronunciation Scoring</h2>
+      <ul>
+        <li><strong>One-click evaluation</strong> grades every scene in parallel.</li>
+        <li><strong>Score 1–5 + coaching tip</strong> in English per scene.</li>
+        <li><strong>Auto star rating</strong> from average AI score.</li>
+      </ul>
+    </div>
 
-    <div class="cta">
-      <a href="/auth/signin">Begin your journey →</a>
+    <div class="grid" style="margin-top: 12px;">
+      <div class="section">
+        <h2><span class="icon">🌏</span>Languages</h2>
+        <ul>
+          <li><strong>French</strong> and <strong>Mandarin (Traditional Chinese)</strong></li>
+          <li>Male or female native narrator voices</li>
+        </ul>
+      </div>
+      <div class="section">
+        <h2><span class="icon">⚡</span>Built on</h2>
+        <ul>
+          <li>Next.js · Neon Postgres · Vercel Blob</li>
+          <li>Google Gemini for text, image, TTS, scoring</li>
+        </ul>
+      </div>
     </div>
 
     <footer>
-      © Miss Loh's Language Master
+      <span>Miss Loh's Language Master</span>
+      <a href="/auth/signin">Begin your journey →</a>
     </footer>
-  </main>
+  </div>
 </body>
 </html>
