@@ -1,0 +1,68 @@
+import { NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { scenes, stories } from "@/lib/db/schema";
+import { generateSceneAudio, type VoiceGender } from "@/lib/ai";
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "teacher") {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
+
+  const body = (await req.json()) as {
+    subtitle?: string;
+    audioUrl?: string;
+    regenerateAudio?: boolean;
+  };
+  const newSubtitle = body.subtitle?.trim();
+  const providedAudioUrl = body.audioUrl?.trim();
+  const regenerateAudio = body.regenerateAudio ?? true;
+
+  if (!newSubtitle && !providedAudioUrl) {
+    return new NextResponse("subtitle or audioUrl required", { status: 400 });
+  }
+
+  const [row] = await db
+    .select({ scene: scenes, story: stories })
+    .from(scenes)
+    .innerJoin(stories, eq(scenes.storyId, stories.id))
+    .where(
+      and(eq(scenes.id, params.id), eq(stories.creatorId, session.user.id))
+    );
+  if (!row) return new NextResponse("Not found", { status: 404 });
+
+  const update: { subtitle?: string; audioUrl?: string } = {};
+  if (newSubtitle && newSubtitle !== row.scene.subtitle) {
+    update.subtitle = newSubtitle;
+    if (regenerateAudio) {
+      const pathname = `stories/${row.story.id}/${row.scene.id}-${Date.now()}.wav`;
+      update.audioUrl = await generateSceneAudio(
+        newSubtitle,
+        pathname,
+        row.story.voice as VoiceGender
+      );
+    }
+  }
+  if (providedAudioUrl) {
+    update.audioUrl = providedAudioUrl;
+  }
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({
+      subtitle: row.scene.subtitle,
+      audioUrl: row.scene.audioUrl,
+    });
+  }
+
+  await db.update(scenes).set(update).where(eq(scenes.id, params.id));
+
+  return NextResponse.json({
+    subtitle: update.subtitle ?? row.scene.subtitle,
+    audioUrl: update.audioUrl ?? row.scene.audioUrl,
+  });
+}
