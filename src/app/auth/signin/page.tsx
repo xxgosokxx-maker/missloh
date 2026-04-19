@@ -31,8 +31,8 @@ export default async function SignInPage() {
           Welcome back.
         </h1>
         <p className="mt-2 text-sm text-ink-600">
-          Teachers and older students sign in with Google. Younger students
-          without a Google account can use a class code and PIN.
+          Teachers sign in with Google. Students sign in with your assigned
+          Class Code and PIN.
         </p>
 
         <form

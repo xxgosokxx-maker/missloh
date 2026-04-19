@@ -10,7 +10,7 @@ import {
   verificationTokens,
 } from "@/lib/db/schema";
 
-export const TEACHER_EMAIL = "misslohtuitor@gmail.com";
+export const TEACHER_EMAIL = "misslohtutor@gmail.com";
 
 export function roleFor(email: string | null | undefined): "teacher" | "student" {
   return email?.toLowerCase() === TEACHER_EMAIL ? "teacher" : "student";
@@ -55,6 +55,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
+    async signIn({ account, profile, user }) {
+      if (account?.provider !== "google") return false;
+      const email = (
+        profile?.email ??
+        user?.email ??
+        ""
+      ).toLowerCase();
+      return email === TEACHER_EMAIL;
+    },
     async session({ session, user }) {
       if (!session.user) return session;
       session.user.id = user.id;

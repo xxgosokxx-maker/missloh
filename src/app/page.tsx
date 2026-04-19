@@ -30,7 +30,7 @@ export default async function HomePage() {
         </p>
         <div className="mt-10 flex justify-center">
           <Link href="/auth/signin" className="btn-primary px-6 py-3 text-base">
-            Sign in with Google
+            Begin your journey
             <span aria-hidden>→</span>
           </Link>
         </div>

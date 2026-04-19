@@ -9,6 +9,8 @@ import { StarRating } from "@/components/StarRating";
 import { EditStudentNameButton } from "@/components/EditStudentNameButton";
 import { CreateStudentButton } from "@/components/CreateStudentButton";
 import { RegeneratePinButton } from "@/components/RegeneratePinButton";
+import { DeleteStudentButton } from "@/components/DeleteStudentButton";
+import { ClickBarrier } from "@/components/ClickBarrier";
 import { displayName } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +71,7 @@ export default async function TeacherStudentsPage() {
         </div>
       )}
 
-      <ul className="space-y-4">
+      <ul className="space-y-2">
         {students.map((student) => {
           const theirs = myAssignments.filter(
             (a) => a.studentId === student.id
@@ -77,71 +79,86 @@ export default async function TeacherStudentsPage() {
           const initial = student.name?.[0]?.toUpperCase() ?? "·";
           const shortName = displayName(student.name);
           return (
-            <li key={student.id} className="card">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-accent-300 to-brand-400 text-sm font-semibold text-white shadow-soft">
+            <li key={student.id}>
+              <details className="group card !p-0 overflow-hidden">
+                <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent-300 to-brand-400 text-xs font-semibold text-white shadow-soft">
                     {initial}
                   </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-ink-900">
-                        {shortName}
-                      </span>
-                      <EditStudentNameButton
-                        id={student.id}
-                        currentName={student.name}
-                      />
-                      {student.authKind === "pin" && (
-                        <RegeneratePinButton
-                          studentId={student.id}
-                          studentName={shortName}
-                        />
-                      )}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-ink-900">
+                      {shortName}
                     </div>
-                    <div className="text-xs text-ink-500">
+                    <div className="text-[11px] text-ink-500">
                       {student.authKind === "pin"
                         ? "PIN login"
                         : student.email}
                     </div>
                   </div>
-                </div>
-                <AssignStoryForm
-                  studentId={student.id}
-                  stories={teacherStories}
-                  assignedStoryIds={theirs.map((t) => t.storyId)}
-                />
-              </div>
-              {theirs.length > 0 && (
-                <ul className="mt-5 divide-y divide-ink-100 border-t border-ink-100">
-                  {theirs.map((a) => (
-                    <li
-                      key={a.id}
-                      className="flex flex-wrap items-center justify-between gap-3 py-3"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <Link
-                          href={`/teacher/students/${student.id}/story/${a.storyId}`}
-                          className="text-sm font-medium text-ink-800 transition hover:text-brand-600"
+                  <span className="badge shrink-0">
+                    {theirs.length} assigned
+                  </span>
+                  <ClickBarrier>
+                    <EditStudentNameButton
+                      id={student.id}
+                      currentName={student.name}
+                    />
+                    {student.authKind === "pin" && (
+                      <RegeneratePinButton
+                        studentId={student.id}
+                        studentName={shortName}
+                      />
+                    )}
+                    <DeleteStudentButton id={student.id} name={shortName} />
+                  </ClickBarrier>
+                  <svg
+                    className="h-4 w-4 shrink-0 text-ink-400 transition group-open:rotate-180"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </summary>
+                <div className="space-y-3 border-t border-ink-100 px-4 py-3">
+                  <AssignStoryForm
+                    studentId={student.id}
+                    stories={teacherStories}
+                    assignedStoryIds={theirs.map((t) => t.storyId)}
+                  />
+                  {theirs.length > 0 && (
+                    <ul className="divide-y divide-ink-100">
+                      {theirs.map((a) => (
+                        <li
+                          key={a.id}
+                          className="flex flex-wrap items-center justify-between gap-3 py-2"
                         >
-                          {a.storyTitle}
-                        </Link>
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          <span className="badge">{a.language}</span>
-                          <span className="badge">Lv {a.difficulty}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <StarRating
-                          assignmentId={a.id}
-                          initial={a.rating ?? null}
-                        />
-                        <RemoveAssignmentButton id={a.id} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                          <Link
+                            href={`/teacher/students/${student.id}/story/${a.storyId}`}
+                            className="min-w-0 flex-1 truncate text-sm font-medium text-ink-800 transition hover:text-brand-600"
+                          >
+                            {a.storyTitle}
+                            <span className="ml-2 text-[11px] font-normal text-ink-500">
+                              {a.language} · Lv {a.difficulty}
+                            </span>
+                          </Link>
+                          <div className="flex items-center gap-3">
+                            <StarRating
+                              assignmentId={a.id}
+                              initial={a.rating ?? null}
+                            />
+                            <RemoveAssignmentButton id={a.id} />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </details>
             </li>
           );
         })}
