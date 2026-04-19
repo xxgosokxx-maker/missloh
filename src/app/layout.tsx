@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { Inter, EB_Garamond } from "next/font/google";
 import "./globals.css";
 
 const sans = Inter({
@@ -8,11 +8,12 @@ const sans = Inter({
   display: "swap",
 });
 
-const display = Fraunces({
-  subsets: ["latin"],
+const display = EB_Garamond({
+  subsets: ["latin", "latin-ext"],
   variable: "--font-display",
   display: "swap",
-  axes: ["SOFT", "WONK"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
