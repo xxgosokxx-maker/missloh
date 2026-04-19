@@ -170,6 +170,14 @@ ${NO_TEXT_RULE}`;
   }
   parts.push({ text: textPart });
 
+  const SAFETY_OFF = [
+    "HARM_CATEGORY_HARASSMENT",
+    "HARM_CATEGORY_HATE_SPEECH",
+    "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+    "HARM_CATEGORY_DANGEROUS_CONTENT",
+    "HARM_CATEGORY_CIVIC_INTEGRITY",
+  ].map((category) => ({ category, threshold: "BLOCK_ONLY_HIGH" }));
+
   const res = await fetchWithRetry(
     `${GEMINI_BASE}/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_KEY()}`,
     {
@@ -178,6 +186,7 @@ ${NO_TEXT_RULE}`;
       body: JSON.stringify({
         contents: [{ parts }],
         generationConfig: { responseModalities: ["IMAGE"] },
+        safetySettings: SAFETY_OFF,
       }),
     }
   );
@@ -185,16 +194,53 @@ ${NO_TEXT_RULE}`;
     throw new Error(`Gemini image failed: ${res.status} ${await res.text()}`);
   }
   const json = (await res.json()) as {
+    promptFeedback?: {
+      blockReason?: string;
+      safetyRatings?: { category: string; probability: string }[];
+    };
     candidates?: {
+      finishReason?: string;
+      safetyRatings?: { category: string; probability: string }[];
       content?: {
-        parts?: { inlineData?: { data?: string; mimeType?: string } }[];
+        parts?: {
+          text?: string;
+          inlineData?: { data?: string; mimeType?: string };
+        }[];
       };
     }[];
   };
-  const resParts = json.candidates?.[0]?.content?.parts ?? [];
+
+  const candidate = json.candidates?.[0];
+  const resParts = candidate?.content?.parts ?? [];
   const imgPart = resParts.find((p) => p.inlineData?.data)?.inlineData;
-  if (!imgPart?.data) throw new Error("Gemini image returned no image data");
-  return { data: imgPart.data, mime: imgPart.mimeType ?? "image/png" };
+  if (imgPart?.data) {
+    return { data: imgPart.data, mime: imgPart.mimeType ?? "image/png" };
+  }
+
+  const blockReason = json.promptFeedback?.blockReason;
+  const finishReason = candidate?.finishReason;
+  const blockedRatings = [
+    ...(json.promptFeedback?.safetyRatings ?? []),
+    ...(candidate?.safetyRatings ?? []),
+  ]
+    .filter((r) => r.probability && r.probability !== "NEGLIGIBLE")
+    .map((r) => `${r.category}=${r.probability}`);
+  const textReply = resParts
+    .map((p) => p.text)
+    .filter(Boolean)
+    .join(" ")
+    .slice(0, 300);
+
+  const bits = [
+    blockReason && `blockReason=${blockReason}`,
+    finishReason && `finishReason=${finishReason}`,
+    blockedRatings.length && `ratings=[${blockedRatings.join(",")}]`,
+    textReply && `text="${textReply}"`,
+  ].filter(Boolean);
+
+  throw new Error(
+    `Gemini image returned no image data${bits.length ? ` (${bits.join(" ")})` : ""}`
+  );
 }
 
 export async function uploadRenderedImage(

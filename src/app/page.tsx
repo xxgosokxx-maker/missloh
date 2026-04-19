@@ -26,7 +26,7 @@ export default async function HomePage() {
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-ink-600">
           Open your next picture book, hear each page read in a native voice,
-          then record yourself reading it back. Miss Loh will be proud.
+          then record yourself reading it back.
         </p>
         <div className="mt-10 flex justify-center">
           <Link href="/auth/signin" className="btn-primary px-6 py-3 text-base">
