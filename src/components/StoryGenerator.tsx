@@ -19,6 +19,7 @@ export function StoryGenerator() {
       difficulty: Number(form.get("difficulty")),
       language: String(form.get("language")),
       imageStyle: String(form.get("imageStyle")),
+      voice: String(form.get("voice")),
     };
     try {
       const res = await fetch("/api/stories", {
@@ -37,71 +38,98 @@ export function StoryGenerator() {
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="mt-4 grid gap-3 rounded-xl border bg-white p-4 sm:grid-cols-2"
-    >
+    <form onSubmit={onSubmit} className="card grid gap-4 sm:grid-cols-2">
       <label className="sm:col-span-2">
-        <span className="text-sm text-slate-600">Title</span>
+        <span className="label">Title</span>
         <input
           required
           name="title"
-          className="mt-1 w-full rounded-md border px-3 py-2"
+          className="input"
           placeholder="The Cat Who Found A Mushroom"
         />
       </label>
       <label className="sm:col-span-2">
-        <span className="text-sm text-slate-600">Description</span>
+        <span className="label">Description</span>
         <textarea
           required
           name="description"
           rows={3}
-          className="mt-1 w-full rounded-md border px-3 py-2"
-          placeholder="A whimsical tale about curiosity..."
+          className="input"
+          placeholder="A whimsical tale about curiosity…"
         />
       </label>
       <label>
-        <span className="text-sm text-slate-600">Language</span>
-        <input
-          required
-          name="language"
-          defaultValue="Mandarin"
-          className="mt-1 w-full rounded-md border px-3 py-2"
-        />
+        <span className="label">Language</span>
+        <select required name="language" defaultValue="Mandarin" className="input">
+          <option value="French">French</option>
+          <option value="Mandarin">Mandarin</option>
+        </select>
       </label>
       <label>
-        <span className="text-sm text-slate-600">Art style</span>
-        <input
-          required
-          name="imageStyle"
-          defaultValue="watercolor"
-          className="mt-1 w-full rounded-md border px-3 py-2"
-        />
+        <span className="label">Art style</span>
+        <select required name="imageStyle" defaultValue="Ghibli" className="input">
+          <option value="Marvel">Marvel</option>
+          <option value="Disney">Disney</option>
+          <option value="Ghibli">Ghibli</option>
+          <option value="Lego">Lego</option>
+          <option value="Toriyama">Toriyama</option>
+        </select>
       </label>
       <label>
-        <span className="text-sm text-slate-600">Difficulty (1–5)</span>
+        <span className="label">Difficulty (1–9)</span>
         <input
           type="number"
           name="difficulty"
           min={1}
-          max={5}
+          max={9}
           defaultValue={2}
-          className="mt-1 w-full rounded-md border px-3 py-2"
+          className="input"
         />
       </label>
-      <div className="flex items-end">
-        <button
-          disabled={loading}
-          className="w-full rounded-md bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:opacity-60"
-        >
+      <label className="sm:col-span-2">
+        <span className="label">Narrator voice</span>
+        <div className="mt-1 grid grid-cols-2 gap-2">
+          <VoicePill value="female" defaultChecked>
+            ♀ Female
+          </VoicePill>
+          <VoicePill value="male">♂ Male</VoicePill>
+        </div>
+      </label>
+      <div className="flex items-end sm:col-span-2">
+        <button disabled={loading} className="btn-primary w-full">
           {loading ? "Generating…" : "Generate story"}
         </button>
       </div>
       {err && (
-        <div className="sm:col-span-2 rounded bg-red-50 p-3 text-sm text-red-700">
+        <div className="sm:col-span-2 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {err}
         </div>
       )}
     </form>
+  );
+}
+
+function VoicePill({
+  value,
+  defaultChecked,
+  children,
+}: {
+  value: string;
+  defaultChecked?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="relative cursor-pointer">
+      <input
+        type="radio"
+        name="voice"
+        value={value}
+        defaultChecked={defaultChecked}
+        className="peer sr-only"
+      />
+      <div className="flex items-center justify-center gap-2 rounded-2xl border border-ink-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-ink-700 transition hover:bg-white peer-checked:border-brand-500 peer-checked:bg-gradient-to-br peer-checked:from-brand-50 peer-checked:to-accent-50 peer-checked:text-brand-700 peer-checked:shadow-soft peer-checked:ring-1 peer-checked:ring-brand-300">
+        {children}
+      </div>
+    </label>
   );
 }

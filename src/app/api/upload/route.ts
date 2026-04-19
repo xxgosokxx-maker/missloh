@@ -15,10 +15,13 @@ export async function POST(request: Request): Promise<NextResponse> {
         return {
           allowedContentTypes: [
             "audio/webm",
+            "audio/webm;codecs=opus",
             "audio/mp4",
+            "audio/mp4;codecs=mp4a.40.2",
             "audio/mpeg",
             "audio/wav",
             "audio/ogg",
+            "audio/ogg;codecs=opus",
           ],
           tokenPayload: JSON.stringify({ userId: session.user.id }),
         };

@@ -1,20 +1,39 @@
+import Link from "next/link";
 import { signIn, auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 export default async function SignInPage() {
   const session = await auth();
   if (session?.user) {
-    if (!session.user.role) redirect("/onboarding");
     redirect(session.user.role === "teacher" ? "/teacher" : "/student");
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-sm rounded-2xl border bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-semibold text-slate-900">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-600">
+    <main className="relative flex min-h-screen items-center justify-center px-6">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute left-1/2 top-0 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-gradient-to-br from-brand-200/60 to-accent-200/50 blur-3xl" />
+      </div>
+
+      <div className="card w-full max-w-sm p-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2.5 text-ink-900"
+        >
+          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-glow">
+            <span className="font-display text-lg leading-none">M</span>
+          </span>
+          <span className="font-display text-lg tracking-tight">
+            Miss Loh's <span className="text-brand-600">Language Master</span>
+          </span>
+        </Link>
+
+        <h1 className="mt-6 font-display text-3xl tracking-tight text-ink-900">
+          Welcome back.
+        </h1>
+        <p className="mt-2 text-sm text-ink-600">
           Google is the only supported sign-in method.
         </p>
+
         <form
           className="mt-6"
           action={async () => {
@@ -24,7 +43,7 @@ export default async function SignInPage() {
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-md border px-4 py-3 font-medium hover:bg-slate-50"
+            className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm font-medium text-ink-800 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
           >
             <svg viewBox="0 0 48 48" width="20" height="20" aria-hidden>
               <path
@@ -47,6 +66,10 @@ export default async function SignInPage() {
             Continue with Google
           </button>
         </form>
+
+        <p className="mt-6 text-center text-[11px] uppercase tracking-wide text-ink-500">
+          By signing in you accept our terms
+        </p>
       </div>
     </main>
   );

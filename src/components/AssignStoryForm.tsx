@@ -18,7 +18,7 @@ export function AssignStoryForm({
   const [pick, setPick] = useState(available[0]?.id ?? "");
 
   if (available.length === 0) {
-    return <span className="text-xs text-slate-400">All assigned</span>;
+    return <span className="badge">All assigned</span>;
   }
 
   return (
@@ -26,7 +26,7 @@ export function AssignStoryForm({
       <select
         value={pick}
         onChange={(e) => setPick(e.target.value)}
-        className="rounded-md border px-2 py-1 text-sm"
+        className="input !mt-0 !w-auto min-w-[10rem]"
       >
         {available.map((s) => (
           <option key={s.id} value={s.id}>
@@ -46,7 +46,7 @@ export function AssignStoryForm({
             router.refresh();
           })
         }
-        className="rounded-md bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700 disabled:opacity-60"
+        className="btn-primary"
       >
         {pending ? "…" : "Assign"}
       </button>

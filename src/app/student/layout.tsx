@@ -8,7 +8,7 @@ export default function StudentLayout({
   return (
     <div className="min-h-screen">
       <TopBar />
-      <main className="px-6 py-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/auth/signin", "/api/auth"];
+const PUBLIC_PATHS = ["/", "/auth/signin", "/api/auth", "/api/gallery"];
 
 export default auth((req) => {
   const { nextUrl } = req;
@@ -17,11 +17,7 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/auth/signin", nextUrl));
   }
 
-  const role = req.auth?.user?.role ?? null;
-  if (!role && pathname !== "/onboarding") {
-    return NextResponse.redirect(new URL("/onboarding", nextUrl));
-  }
-
+  const role = req.auth?.user?.role;
   if (role === "student" && pathname.startsWith("/teacher")) {
     return NextResponse.redirect(new URL("/student", nextUrl));
   }

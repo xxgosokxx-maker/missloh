@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { assignments, scenes, recordings, stories } from "@/lib/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { StoryPlayer } from "@/components/StoryPlayer";
 
 export default async function StudentStoryPage({
@@ -41,21 +42,29 @@ export default async function StudentStoryPage({
   const recBySceneId = new Map(recs.map((r) => [r.sceneId, r.audioUrl]));
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-semibold">{story?.title}</h1>
-      <div className="mt-6">
-        <StoryPlayer
-          scenes={sceneRows.map((s) => ({
-            id: s.id,
-            subtitle: s.subtitle,
-            imageUrl: s.imageUrl,
-            audioUrl: s.audioUrl,
-            studentAudioUrl: recBySceneId.get(s.id) ?? null,
-          }))}
-          mode="practice"
-          assignmentId={assignment.id}
-        />
+    <div className="space-y-6">
+      <div>
+        <Link
+          href="/student"
+          className="text-xs font-medium text-ink-500 transition hover:text-ink-900"
+        >
+          ← Back to your stories
+        </Link>
+        <h1 className="mt-2 font-display text-4xl tracking-tight text-ink-900">
+          {story?.title}
+        </h1>
       </div>
+      <StoryPlayer
+        scenes={sceneRows.map((s) => ({
+          id: s.id,
+          subtitle: s.subtitle,
+          imageUrl: s.imageUrl,
+          audioUrl: s.audioUrl,
+          studentAudioUrl: recBySceneId.get(s.id) ?? null,
+        }))}
+        mode="practice"
+        assignmentId={assignment.id}
+      />
     </div>
   );
 }

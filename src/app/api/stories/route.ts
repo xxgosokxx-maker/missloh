@@ -5,8 +5,10 @@ import { stories, scenes } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import {
   generateSceneAudio,
-  generateSceneImage,
   generateStoryScenes,
+  renderSceneImage,
+  uploadRenderedImage,
+  type RenderedImage,
 } from "@/lib/ai";
 
 export const maxDuration = 300;
@@ -30,15 +32,18 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { title, description, difficulty, language, imageStyle } = body as {
-    title: string;
-    description: string;
-    difficulty: number;
-    language: string;
-    imageStyle: string;
-  };
+  const { title, description, difficulty, language, imageStyle, voice } =
+    body as {
+      title: string;
+      description: string;
+      difficulty: number;
+      language: string;
+      imageStyle: string;
+      voice?: "male" | "female";
+    };
+  const vox: "male" | "female" = voice === "male" ? "male" : "female";
 
-  const generatedScenes = await generateStoryScenes({
+  const { characters, scenes: generatedScenes } = await generateStoryScenes({
     title,
     description,
     difficulty,
@@ -54,35 +59,79 @@ export async function POST(req: Request) {
       difficulty,
       language,
       imageStyle,
+      voice: vox,
       creatorId: session.user.id,
     })
     .returning();
 
-  const sceneInserts = await Promise.all(
-    generatedScenes.map(async (s, idx) => {
-      const [imageUrl, audioUrl] = await Promise.all([
-        generateSceneImage(
-          s.imagePrompt,
-          imageStyle,
-          `stories/${story.id}/scene-${idx}.png`
-        ).catch(() => null),
-        generateSceneAudio(
-          s.subtitle,
-          `stories/${story.id}/scene-${idx}.wav`
-        ).catch(() => null),
-      ]);
-      return {
-        storyId: story.id,
-        subtitle: s.subtitle,
-        imagePrompt: s.imagePrompt,
-        imageUrl,
-        audioUrl,
-        order: idx,
-      };
+  const audioPromises = generatedScenes.map((s, idx) =>
+    generateSceneAudio(
+      s.subtitle,
+      `stories/${story.id}/scene-${idx}.wav`,
+      vox
+    ).catch((err) => {
+      console.error(`[scene ${idx}] audio failed:`, err);
+      return null as string | null;
     })
   );
 
-  await db.insert(scenes).values(sceneInserts);
+  // Scene 0 is rendered first because its bytes reference-guide the rest
+  // (character + style consistency). Its upload runs in parallel with the
+  // remaining Gemini calls — the reference is the in-memory buffer, not the URL.
+  const scenePath = (idx: number) =>
+    `stories/${story.id}/scene-${idx}.webp`;
+
+  let anchor: RenderedImage | null = null;
+  try {
+    anchor = await renderSceneImage({
+      imagePrompt: generatedScenes[0].imagePrompt,
+      imageStyle,
+      characters,
+    });
+  } catch (err) {
+    console.error(`[scene 0] image failed:`, err);
+  }
+
+  const imagePromises: Promise<string | null>[] = generatedScenes.map(
+    (s, idx) => {
+      if (idx === 0) {
+        return anchor
+          ? uploadRenderedImage(anchor, scenePath(0)).catch((err) => {
+              console.error(`[scene 0] upload failed:`, err);
+              return null;
+            })
+          : Promise.resolve(null);
+      }
+      return (async () => {
+        try {
+          const rendered = await renderSceneImage({
+            imagePrompt: s.imagePrompt,
+            imageStyle,
+            characters,
+            referenceImage: anchor ?? undefined,
+          });
+          return await uploadRenderedImage(rendered, scenePath(idx));
+        } catch (err) {
+          console.error(`[scene ${idx}] image failed:`, err);
+          return null;
+        }
+      })();
+    }
+  );
+  const imageUrls = await Promise.all(imagePromises);
+
+  const audioUrls = await Promise.all(audioPromises);
+
+  await db.insert(scenes).values(
+    generatedScenes.map((s, idx) => ({
+      storyId: story.id,
+      subtitle: s.subtitle,
+      imagePrompt: s.imagePrompt,
+      imageUrl: imageUrls[idx],
+      audioUrl: audioUrls[idx],
+      order: idx,
+    }))
+  );
 
   return NextResponse.json({ id: story.id });
 }

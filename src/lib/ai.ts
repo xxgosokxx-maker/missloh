@@ -1,5 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
+import sharp from "sharp";
 import { z } from "zod";
 import { uploadBlob } from "@/lib/blob";
 
@@ -15,7 +16,16 @@ const SceneSchema = z.object({
 });
 
 const StorySchema = z.object({
+  characters: z
+    .string()
+    .describe(
+      "Character bible: 1-3 sentences in English describing the recurring characters' species, body shape, colors, hair, clothing, and distinctive features. Every scene's illustration will reference this to keep characters consistent."
+    ),
   scenes: z.array(SceneSchema).min(3).max(10),
+});
+
+const SubtitleListSchema = z.object({
+  subtitles: z.array(z.string()),
 });
 
 export type GenerateStoryInput = {
@@ -26,6 +36,13 @@ export type GenerateStoryInput = {
   imageStyle: string;
 };
 
+function languageLabel(language: string): string {
+  if (/mandarin|chinese|中文/i.test(language)) {
+    return "Traditional Chinese (繁體中文, as used in Taiwan / Hong Kong — NOT Simplified Chinese)";
+  }
+  return language;
+}
+
 const GEMINI_KEY = () => {
   const k = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
   if (!k) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set");
@@ -33,61 +50,182 @@ const GEMINI_KEY = () => {
 };
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  attempts = 3
+): Promise<Response> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, init);
+      if (res.ok) return res;
+      if (res.status < 500 && res.status !== 429) return res;
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    }
+    if (i < attempts - 1) {
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** i));
+    }
+  }
+  throw lastErr;
+}
+
 export async function generateStoryScenes(input: GenerateStoryInput) {
+  const lang = languageLabel(input.language);
   const { object } = await generateObject({
-    model: google("gemini-2.5-flash"),
+    model: google("gemini-3.1-pro-preview"),
     schema: StorySchema,
     prompt: `You are a language-learning picture book author.
-Write a short picture book for a student learning ${input.language}.
+Write a short picture book for a student learning ${lang}.
 
 Title: ${input.title}
 Description: ${input.description}
-Difficulty (1 easiest, 5 hardest): ${input.difficulty}
+Difficulty (1 = absolute beginner, 9 = advanced near-native): ${input.difficulty}
+- Level 1-3: very short sentences, present tense, high-frequency vocabulary only
+- Level 4-6: compound sentences, common past/future tenses, everyday vocabulary
+- Level 7-9: longer sentences, varied tenses and connectors, richer vocabulary and idiom
 
-Return 5-7 scenes. Each scene has:
-- subtitle: one sentence the student will read aloud, IN ${input.language}, matched to difficulty level
-- imagePrompt: a vivid visual scene description in English, with the art style "${input.imageStyle}" woven in`,
+Return a character bible AND 5-7 scenes.
+
+- characters: 1-3 sentences describing the recurring characters' species, colors, clothing, hair, and distinctive features. These will be illustrated consistently across every scene.
+- scenes[].subtitle: one sentence the student will read aloud, IN ${lang}, matched to difficulty level. For Chinese: use ONLY Traditional characters (e.g. 學, 愛, 們, 說, 買) — never Simplified (e.g. 学, 爱, 们, 说, 买).
+- scenes[].imagePrompt: a vivid visual scene description in English. Describe WHAT the characters are doing and WHERE — do NOT re-describe the characters themselves (the bible handles that). Mention art style "${input.imageStyle}".`,
   });
-  return object.scenes;
+  return object;
 }
 
-export async function generateSceneImage(
-  imagePrompt: string,
-  imageStyle: string,
-  pathname: string
-): Promise<string> {
-  const res = await fetch(
-    `${GEMINI_BASE}/models/imagen-3.0-generate-002:predict?key=${GEMINI_KEY()}`,
+export async function regenerateSubtitles(opts: {
+  title: string;
+  description: string;
+  language: string;
+  difficulty: number;
+  imagePrompts: string[];
+}): Promise<string[]> {
+  const lang = languageLabel(opts.language);
+  const { object } = await generateObject({
+    model: google("gemini-3.1-pro-preview"),
+    schema: SubtitleListSchema,
+    prompt: `You are remixing an existing picture book into ${lang} for a student at difficulty ${opts.difficulty} (1 = absolute beginner, 9 = advanced near-native).
+- Level 1-3: very short sentences, present tense, high-frequency vocabulary only
+- Level 4-6: compound sentences, common past/future tenses, everyday vocabulary
+- Level 7-9: longer sentences, varied tenses and connectors, richer vocabulary and idiom
+
+The original story stays the same visually. You MUST return exactly ${opts.imagePrompts.length} subtitles, one per scene, in order, each written IN ${lang}. For Chinese: use ONLY Traditional characters (e.g. 學, 愛, 們, 說, 買) — never Simplified (e.g. 学, 爱, 们, 说, 买).
+
+Title: ${opts.title}
+Description: ${opts.description}
+
+Scenes (each will keep its existing illustration):
+${opts.imagePrompts.map((p, i) => `${i + 1}. ${p}`).join("\n")}`,
+  });
+  if (object.subtitles.length !== opts.imagePrompts.length) {
+    throw new Error(
+      `Expected ${opts.imagePrompts.length} subtitles, got ${object.subtitles.length}`
+    );
+  }
+  return object.subtitles;
+}
+
+export type RenderedImage = { data: string; mime: string };
+
+const IMAGE_MAX_DIMENSION = 1024;
+const WEBP_QUALITY = 80;
+const RENDERED_IMAGE_MIME = "image/webp";
+
+export async function renderSceneImage(opts: {
+  imagePrompt: string;
+  imageStyle: string;
+  characters: string;
+  referenceImage?: RenderedImage;
+}): Promise<RenderedImage> {
+  const NO_TEXT_RULE =
+    "STRICT RULE: the image must contain ZERO written text of any kind. No letters, words, numbers, captions, titles, speech bubbles, thought bubbles, signs, shop names, book covers, street signs, labels, logos, watermarks, or signatures. If a sign or book naturally appears in the scene, render it blank or with abstract patterns — never with readable characters.";
+
+  const textPart = opts.referenceImage
+    ? `Generate a NEW illustration for the next page of a children's picture book. This is a DIFFERENT scene from the reference image — do NOT copy or return the reference image. Use the reference ONLY as a style guide for character designs, faces, body proportions, clothing colors, line work, and art style.
+Art style: ${opts.imageStyle}.
+Characters (keep them visually consistent with the reference): ${opts.characters}
+New scene to illustrate (this is what must be drawn, it is different from the reference): ${opts.imagePrompt}
+Produce a single new illustration showing the new scene above, no panels, no borders.
+${NO_TEXT_RULE}`
+    : `Generate the opening page of a children's picture book as a single illustration.
+Art style: ${opts.imageStyle}.
+Characters (draw them consistently so later pages can reference this image): ${opts.characters}
+Scene: ${opts.imagePrompt}
+Produce a single illustration, no panels, no borders.
+${NO_TEXT_RULE}`;
+
+  const parts: Array<
+    { text: string } | { inlineData: { mimeType: string; data: string } }
+  > = [];
+  if (opts.referenceImage) {
+    parts.push({
+      inlineData: {
+        mimeType: opts.referenceImage.mime,
+        data: opts.referenceImage.data,
+      },
+    });
+  }
+  parts.push({ text: textPart });
+
+  const res = await fetchWithRetry(
+    `${GEMINI_BASE}/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_KEY()}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        instances: [
-          {
-            prompt: `${imagePrompt}. Art style: ${imageStyle}. Children's picture book illustration.`,
-          },
-        ],
-        parameters: { sampleCount: 1, aspectRatio: "1:1" },
+        contents: [{ parts }],
+        generationConfig: { responseModalities: ["IMAGE"] },
       }),
     }
   );
   if (!res.ok) {
-    throw new Error(`Imagen failed: ${res.status} ${await res.text()}`);
+    throw new Error(`Gemini image failed: ${res.status} ${await res.text()}`);
   }
   const json = (await res.json()) as {
-    predictions?: { bytesBase64Encoded?: string }[];
+    candidates?: {
+      content?: {
+        parts?: { inlineData?: { data?: string; mimeType?: string } }[];
+      };
+    }[];
   };
-  const b64 = json.predictions?.[0]?.bytesBase64Encoded;
-  if (!b64) throw new Error("Imagen returned no image");
-  return uploadBlob(pathname, Buffer.from(b64, "base64"), "image/png");
+  const resParts = json.candidates?.[0]?.content?.parts ?? [];
+  const imgPart = resParts.find((p) => p.inlineData?.data)?.inlineData;
+  if (!imgPart?.data) throw new Error("Gemini image returned no image data");
+  return { data: imgPart.data, mime: imgPart.mimeType ?? "image/png" };
+}
+
+export async function uploadRenderedImage(
+  img: RenderedImage,
+  pathname: string
+): Promise<string> {
+  const raw = Buffer.from(img.data, "base64");
+  const webp = await sharp(raw)
+    .resize(IMAGE_MAX_DIMENSION, IMAGE_MAX_DIMENSION, {
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: WEBP_QUALITY })
+    .toBuffer();
+  return uploadBlob(pathname, webp, RENDERED_IMAGE_MIME);
+}
+
+export type VoiceGender = "male" | "female";
+
+function voiceName(gender: VoiceGender): string {
+  // Gemini prebuilt voices: Kore (female, warm), Puck (male, upbeat).
+  return gender === "male" ? "Puck" : "Kore";
 }
 
 export async function generateSceneAudio(
   subtitle: string,
-  pathname: string
+  pathname: string,
+  gender: VoiceGender = "female"
 ): Promise<string> {
-  const res = await fetch(
-    `${GEMINI_BASE}/models/gemini-2.5-flash-preview-tts:generateContent?key=${GEMINI_KEY()}`,
+  const res = await fetchWithRetry(
+    `${GEMINI_BASE}/models/gemini-3.1-flash-tts-preview:generateContent?key=${GEMINI_KEY()}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -97,7 +235,7 @@ export async function generateSceneAudio(
           responseModalities: ["AUDIO"],
           speechConfig: {
             voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: "Kore" },
+              prebuiltVoiceConfig: { voiceName: voiceName(gender) },
             },
           },
         },

@@ -24,3 +24,36 @@ export async function DELETE(
 
   return NextResponse.json({ ok: true });
 }
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "teacher") {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
+
+  const body = (await req.json()) as { rating?: number | null };
+  const raw = body.rating;
+  const rating =
+    raw === null || raw === undefined
+      ? null
+      : Math.max(0, Math.min(5, Math.round(Number(raw))));
+
+  if (rating !== null && Number.isNaN(rating)) {
+    return new NextResponse("Invalid rating", { status: 400 });
+  }
+
+  await db
+    .update(assignments)
+    .set({ rating })
+    .where(
+      and(
+        eq(assignments.id, params.id),
+        eq(assignments.assignedBy, session.user.id)
+      )
+    );
+
+  return NextResponse.json({ ok: true, rating });
+}

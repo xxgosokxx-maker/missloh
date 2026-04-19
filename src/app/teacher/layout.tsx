@@ -9,23 +9,30 @@ export default function TeacherLayout({
   return (
     <div className="min-h-screen">
       <TopBar />
-      <nav className="border-b bg-white px-6">
-        <div className="flex gap-6 text-sm">
-          <Link
-            href="/teacher"
-            className="border-b-2 border-transparent py-3 hover:border-brand-600"
-          >
-            Stories
-          </Link>
-          <Link
-            href="/teacher/students"
-            className="border-b-2 border-transparent py-3 hover:border-brand-600"
-          >
-            Students
-          </Link>
+      <nav className="border-b border-ink-100/70 bg-white/40 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center gap-1 px-6">
+          <TabLink href="/teacher">Stories</TabLink>
+          <TabLink href="/teacher/students">Students</TabLink>
         </div>
       </nav>
-      <main className="px-6 py-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
     </div>
+  );
+}
+
+function TabLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="relative rounded-t-2xl px-4 py-3 text-sm font-medium text-ink-600 transition hover:text-ink-900"
+    >
+      {children}
+    </Link>
   );
 }

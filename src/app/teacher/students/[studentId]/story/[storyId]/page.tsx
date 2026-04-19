@@ -9,7 +9,9 @@ import {
 } from "@/lib/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { StoryPlayer } from "@/components/StoryPlayer";
+import { displayName } from "@/lib/names";
 
 export default async function TeacherReviewPage({
   params,
@@ -60,23 +62,34 @@ export default async function TeacherReviewPage({
   const recBySceneId = new Map(recs.map((r) => [r.sceneId, r.audioUrl]));
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-2 text-sm text-slate-500">
-        Reviewing <strong>{student.name}</strong>
+    <div className="space-y-6">
+      <div>
+        <Link
+          href="/teacher/students"
+          className="text-xs font-medium text-ink-500 transition hover:text-ink-900"
+        >
+          ← Back to students
+        </Link>
+        <div className="mt-2 text-xs uppercase tracking-wide text-ink-500">
+          Reviewing
+        </div>
+        <h1 className="font-display text-4xl tracking-tight text-ink-900">
+          {displayName(student.name)}
+        </h1>
+        <div className="mt-1 text-sm text-ink-600">
+          on <span className="font-medium text-ink-800">{story.title}</span>
+        </div>
       </div>
-      <h1 className="text-2xl font-semibold">{story.title}</h1>
-      <div className="mt-6">
-        <StoryPlayer
-          scenes={sceneRows.map((s) => ({
-            id: s.id,
-            subtitle: s.subtitle,
-            imageUrl: s.imageUrl,
-            audioUrl: s.audioUrl,
-            studentAudioUrl: recBySceneId.get(s.id) ?? null,
-          }))}
-          mode="review"
-        />
-      </div>
+      <StoryPlayer
+        scenes={sceneRows.map((s) => ({
+          id: s.id,
+          subtitle: s.subtitle,
+          imageUrl: s.imageUrl,
+          audioUrl: s.audioUrl,
+          studentAudioUrl: recBySceneId.get(s.id) ?? null,
+        }))}
+        mode="review"
+      />
     </div>
   );
 }

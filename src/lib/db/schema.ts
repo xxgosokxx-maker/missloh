@@ -76,6 +76,7 @@ export const stories = pgTable("stories", {
   difficulty: integer("difficulty").notNull().default(1),
   language: text("language").notNull().default("English"),
   imageStyle: text("image_style").notNull().default("watercolor"),
+  voice: text("voice").notNull().default("female"),
   creatorId: uuid("creator_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -111,6 +112,7 @@ export const assignments = pgTable(
     assignedBy: uuid("assigned_by")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    rating: integer("rating"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
   (t) => ({

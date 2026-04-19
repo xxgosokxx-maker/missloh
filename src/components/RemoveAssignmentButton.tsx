@@ -15,7 +15,7 @@ export function RemoveAssignmentButton({ id }: { id: string }) {
         })
       }
       disabled={pending}
-      className="text-xs text-red-600 hover:underline disabled:opacity-50"
+      className="text-xs font-medium text-ink-500 transition hover:text-red-600 disabled:opacity-50"
     >
       {pending ? "Removing…" : "Remove"}
     </button>

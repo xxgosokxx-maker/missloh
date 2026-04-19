@@ -12,5 +12,49 @@ body {
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-ink-50 text-ink-800 antialiased;
+  background-image:
+    radial-gradient(
+      ellipse 80% 60% at 10% 0%,
+      rgb(255 165 136 / 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 90% 10%,
+      rgb(244 207 75 / 0.18),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 100% 70% at 50% 100%,
+      rgb(255 229 221 / 0.5),
+      transparent 60%
+    );
+  background-attachment: fixed;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-medium text-white shadow-glow transition hover:from-brand-500 hover:to-brand-500 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:hover:translate-y-0;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-ink-200 bg-white/70 px-4 py-2 text-sm font-medium text-ink-700 backdrop-blur transition hover:bg-white hover:shadow-soft;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-ink-500 transition hover:bg-ink-100 hover:text-ink-900;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white shadow-soft transition hover:bg-red-600 disabled:opacity-60;
+  }
+  .card {
+    @apply rounded-3xl border border-ink-100 bg-white/80 p-6 shadow-soft backdrop-blur-sm;
+  }
+  .input {
+    @apply mt-1 w-full rounded-xl border border-ink-200 bg-white/80 px-3 py-2 text-sm text-ink-900 shadow-sm outline-none transition placeholder:text-ink-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100;
+  }
+  .label {
+    @apply block text-xs font-medium uppercase tracking-wide text-ink-500;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full border border-ink-200 bg-white/80 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-ink-600;
+  }
 }

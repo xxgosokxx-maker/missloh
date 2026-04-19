@@ -5,6 +5,8 @@ import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { StoryGenerator } from "@/components/StoryGenerator";
 import { DeleteStoryButton } from "@/components/DeleteStoryButton";
+import { RenameStoryButton } from "@/components/RenameStoryButton";
+import { RemixStoryButton } from "@/components/RemixStoryButton";
 
 export const dynamic = "force-dynamic";
 
@@ -17,38 +19,59 @@ export default async function TeacherStoriesPage() {
     .orderBy(desc(stories.createdAt));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="space-y-12">
       <section>
-        <h2 className="text-xl font-semibold">Generate a new story</h2>
+        <div className="mb-5 flex items-end justify-between">
+          <div>
+            <h2 className="font-display text-3xl tracking-tight text-ink-900">
+              Generate a new story
+            </h2>
+            <p className="mt-1 text-sm text-ink-500">
+              Pick a language, art style, and difficulty. We'll draft scenes,
+              illustrate them, and narrate them in a natural voice.
+            </p>
+          </div>
+        </div>
         <StoryGenerator />
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold">Your stories</h2>
+        <div className="mb-5 flex items-end justify-between">
+          <h2 className="font-display text-3xl tracking-tight text-ink-900">
+            Your stories
+          </h2>
+          <span className="badge">{myStories.length} total</span>
+        </div>
         {myStories.length === 0 ? (
-          <p className="mt-4 text-slate-500">No stories yet.</p>
+          <div className="card text-center text-ink-500">
+            No stories yet. Generate your first one above.
+          </div>
         ) : (
-          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+          <ul className="grid gap-4 sm:grid-cols-2">
             {myStories.map((s) => (
-              <li
-                key={s.id}
-                className="flex items-start justify-between gap-4 rounded-xl border bg-white p-4"
-              >
-                <div>
-                  <Link
-                    href={`/teacher/stories/${s.id}`}
-                    className="font-medium text-slate-900 hover:underline"
-                  >
-                    {s.title}
-                  </Link>
-                  <div className="mt-1 text-xs text-slate-500">
-                    {s.language} · difficulty {s.difficulty} · {s.imageStyle}
+              <li key={s.id} className="card flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/teacher/stories/${s.id}`}
+                      className="block font-display text-xl leading-tight tracking-tight text-ink-900 transition hover:text-brand-600"
+                    >
+                      {s.title}
+                    </Link>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <span className="badge">{s.language}</span>
+                      <span className="badge">Lv {s.difficulty}</span>
+                      <span className="badge">{s.imageStyle}</span>
+                    </div>
                   </div>
-                  <p className="mt-2 text-sm text-slate-600 line-clamp-2">
-                    {s.description}
-                  </p>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <RenameStoryButton id={s.id} currentTitle={s.title} />
+                    <DeleteStoryButton id={s.id} />
+                  </div>
                 </div>
-                <DeleteStoryButton id={s.id} />
+                <div className="border-t border-ink-100 pt-4">
+                  <RemixStoryButton storyId={s.id} originalTitle={s.title} />
+                </div>
               </li>
             ))}
           </ul>
