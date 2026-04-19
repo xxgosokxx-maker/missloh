@@ -16,11 +16,16 @@ const AUDIO_CONTENT_TYPES = [
   "audio/ogg;codecs=opus",
 ];
 
+const UPLOAD_IMAGE_CONTENT_TYPES = ["image/webp"];
+
 // Pathnames the client is allowed to request upload tokens for.
-// - recordings/<assignmentId>/...  -> student who owns that assignment
-// - stories/voiceover/...          -> teacher
+// - recordings/<assignmentId>/...       -> student who owns that assignment
+// - stories/voiceover/...               -> teacher
+// - stories/upload/<tempId>/scene-N.webp -> teacher (teacher-provided scene images)
 const RECORDING_RE = /^recordings\/([0-9a-f-]{36})\/[^/]+$/i;
 const VOICEOVER_RE = /^stories\/voiceover\/[^/]+$/;
+const UPLOAD_IMAGE_RE =
+  /^stories\/upload\/[0-9a-f-]{36}\/scene-\d+\.webp$/i;
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
@@ -36,6 +41,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         const role = session.user.role;
         const recMatch = pathname.match(RECORDING_RE);
         const voMatch = VOICEOVER_RE.test(pathname);
+        const upImgMatch = UPLOAD_IMAGE_RE.test(pathname);
+
+        let allowedContentTypes = AUDIO_CONTENT_TYPES;
 
         if (recMatch) {
           if (role !== "student") throw new Error("Forbidden");
@@ -52,12 +60,15 @@ export async function POST(request: Request): Promise<NextResponse> {
           if (!assignment) throw new Error("Forbidden");
         } else if (voMatch) {
           if (role !== "teacher") throw new Error("Forbidden");
+        } else if (upImgMatch) {
+          if (role !== "teacher") throw new Error("Forbidden");
+          allowedContentTypes = UPLOAD_IMAGE_CONTENT_TYPES;
         } else {
           throw new Error("Forbidden pathname");
         }
 
         return {
-          allowedContentTypes: AUDIO_CONTENT_TYPES,
+          allowedContentTypes,
           tokenPayload: JSON.stringify({ userId: session.user.id }),
         };
       },
