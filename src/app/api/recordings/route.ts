@@ -42,7 +42,14 @@ export async function POST(req: Request) {
     })
     .onConflictDoUpdate({
       target: [recordings.assignmentId, recordings.sceneId],
-      set: { audioUrl, recordedAt: new Date() },
+      set: {
+        audioUrl,
+        recordedAt: new Date(),
+        aiScore: null,
+        aiFeedback: null,
+        aiTranscript: null,
+        aiEvaluatedAt: null,
+      },
     })
     .returning();
 

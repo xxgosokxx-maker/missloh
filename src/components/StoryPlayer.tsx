@@ -3,6 +3,7 @@
 import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { RecordingScore } from "@/components/RecordingScore";
 
 const MAX_RECORD_SECONDS = 30;
 
@@ -12,6 +13,9 @@ export type PlayerScene = {
   imageUrl: string | null;
   audioUrl: string | null;
   studentAudioUrl?: string | null;
+  aiScore?: number | null;
+  aiFeedback?: string | null;
+  aiTranscript?: string | null;
 };
 
 type Props =
@@ -407,6 +411,13 @@ export function StoryPlayer(props: Props) {
               Student's audio
             </div>
             <audio controls src={studentUrl} className="w-full" />
+            {mode === "review" && (
+              <RecordingScore
+                score={scene.aiScore}
+                feedback={scene.aiFeedback}
+                transcript={scene.aiTranscript}
+              />
+            )}
           </div>
         )}
       </div>
