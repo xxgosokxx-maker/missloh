@@ -114,6 +114,7 @@ export const stories = pgTable("stories", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  archivedAt: timestamp("archived_at", { mode: "date" }),
 });
 
 export const scenes = pgTable("scenes", {
