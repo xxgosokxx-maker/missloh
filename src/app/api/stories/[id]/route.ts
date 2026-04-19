@@ -31,15 +31,32 @@ export async function PATCH(
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  const { title } = (await req.json()) as { title?: string };
-  const trimmed = title?.trim();
-  if (!trimmed) {
-    return new NextResponse("Title required", { status: 400 });
+  const body = (await req.json()) as {
+    title?: string;
+    archived?: boolean;
+  };
+
+  const patch: { title?: string; archivedAt?: Date | null } = {};
+
+  if (typeof body.title === "string") {
+    const trimmed = body.title.trim();
+    if (!trimmed) {
+      return new NextResponse("Title required", { status: 400 });
+    }
+    patch.title = trimmed;
+  }
+
+  if (typeof body.archived === "boolean") {
+    patch.archivedAt = body.archived ? new Date() : null;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return new NextResponse("No fields to update", { status: 400 });
   }
 
   await db
     .update(stories)
-    .set({ title: trimmed })
+    .set(patch)
     .where(
       and(eq(stories.id, params.id), eq(stories.creatorId, session.user.id))
     );
