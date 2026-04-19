@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AssignStoryForm } from "@/components/AssignStoryForm";
 import { RemoveAssignmentButton } from "@/components/RemoveAssignmentButton";
 import { StarRating } from "@/components/StarRating";
+import { EditStudentNameButton } from "@/components/EditStudentNameButton";
 import { displayName } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
@@ -68,7 +69,15 @@ export default async function TeacherStudentsPage() {
                     {initial}
                   </span>
                   <div>
-                    <div className="font-medium text-ink-900">{shortName}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-ink-900">
+                        {shortName}
+                      </span>
+                      <EditStudentNameButton
+                        id={student.id}
+                        currentName={student.name}
+                      />
+                    </div>
                     <div className="text-xs text-ink-500">{student.email}</div>
                   </div>
                 </div>
