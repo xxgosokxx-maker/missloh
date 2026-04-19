@@ -25,7 +25,6 @@ export default async function TeacherStudentsPage() {
       title: stories.title,
       language: stories.language,
       difficulty: stories.difficulty,
-      imageStyle: stories.imageStyle,
     })
     .from(stories)
     .where(eq(stories.creatorId, session!.user.id))

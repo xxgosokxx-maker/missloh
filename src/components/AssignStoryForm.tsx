@@ -8,11 +8,10 @@ type StoryOption = {
   title: string;
   language: string;
   difficulty: number;
-  imageStyle: string;
 };
 
 function optionLabel(s: StoryOption): string {
-  return `${s.title} — ${s.language} · Lv ${s.difficulty} · ${s.imageStyle}`;
+  return `${s.title} — ${s.language} · Lv ${s.difficulty}`;
 }
 
 export function AssignStoryForm({
@@ -69,7 +68,6 @@ export function AssignStoryForm({
         <div className="flex flex-wrap gap-1.5">
           <span className="badge">{selected.language}</span>
           <span className="badge">Lv {selected.difficulty}</span>
-          <span className="badge">{selected.imageStyle}</span>
         </div>
       )}
     </div>
