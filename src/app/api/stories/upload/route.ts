@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stories, scenes } from "@/lib/db/schema";
@@ -82,6 +83,8 @@ export async function POST(req: Request) {
       order: idx,
     }))
   );
+
+  revalidatePath("/teacher");
 
   return NextResponse.json({ id: story.id });
 }
