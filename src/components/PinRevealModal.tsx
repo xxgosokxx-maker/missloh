@@ -25,40 +25,57 @@ export function PinRevealModal({
     }
   }
 
+  const digits = pin.split("");
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 overflow-y-auto bg-ink-900/50 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div
-        className="card w-full max-w-sm p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="font-display text-2xl tracking-tight text-ink-900">
-          {title}
-        </h3>
-        {subtitle && (
-          <p className="mt-1 text-sm text-ink-600">{subtitle}</p>
-        )}
-        <div className="mt-5 overflow-hidden rounded-2xl border border-ink-200 bg-ink-50 px-3 py-4 text-center">
-          <div className="text-[10px] font-medium uppercase tracking-widest text-ink-500">
-            6-digit PIN
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className="card w-full max-w-sm p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3 className="font-display text-2xl tracking-tight text-ink-900">
+            {title}
+          </h3>
+          {subtitle && (
+            <p className="mt-1 text-sm text-ink-600">{subtitle}</p>
+          )}
+          <div className="mt-5 rounded-2xl border border-ink-200 bg-ink-50 p-4">
+            <div className="text-center text-[10px] font-medium uppercase tracking-widest text-ink-500">
+              6-digit PIN
+            </div>
+            <div className="mt-3 flex justify-center gap-1.5 sm:gap-2">
+              {digits.map((d, i) => (
+                <span
+                  key={i}
+                  className="grid h-11 w-8 place-items-center rounded-lg bg-white font-mono text-2xl font-bold text-ink-900 shadow-sm ring-1 ring-ink-200 sm:h-14 sm:w-10 sm:text-3xl"
+                >
+                  {d}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="mt-2 font-mono text-3xl font-bold tracking-[0.2em] text-ink-900 sm:text-4xl sm:tracking-[0.3em]">
-            {pin}
+          <p className="mt-3 text-xs text-ink-500">
+            This PIN will not be shown again. Copy it now and share it with the
+            student.
+          </p>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={copy}
+              className="btn-ghost w-full sm:flex-1"
+            >
+              {copied ? "Copied!" : "Copy PIN"}
+            </button>
+            <button
+              onClick={onClose}
+              className="btn-primary w-full sm:flex-1"
+            >
+              Done
+            </button>
           </div>
-        </div>
-        <p className="mt-3 text-xs text-ink-500">
-          This PIN will not be shown again. Copy it now and share it with the
-          student.
-        </p>
-        <div className="mt-5 flex gap-2">
-          <button onClick={copy} className="btn-ghost flex-1">
-            {copied ? "Copied!" : "Copy PIN"}
-          </button>
-          <button onClick={onClose} className="btn-primary flex-1">
-            Done
-          </button>
         </div>
       </div>
     </div>
