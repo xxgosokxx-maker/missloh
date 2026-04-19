@@ -34,7 +34,7 @@ export async function studentSignInAction(
   const classCode = String(formData.get("classCode") ?? "");
   const pin = String(formData.get("pin") ?? "");
 
-  const ip = getIp(headers());
+  const ip = getIp(await headers());
 
   if (await isRateLimited(ip, "pin")) {
     return { ok: false, error: "Too many attempts. Try again in 15 minutes." };

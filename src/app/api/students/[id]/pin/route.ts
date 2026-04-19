@@ -7,17 +7,18 @@ import { generatePin, hashPin } from "@/lib/pin";
 
 export async function POST(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const { id } = await params;
   const [row] = await db
     .select({ authKind: users.authKind })
     .from(users)
-    .where(eq(users.id, params.id));
+    .where(eq(users.id, id));
   if (!row) {
     return new NextResponse("Not found", { status: 404 });
   }
@@ -31,9 +32,9 @@ export async function POST(
   await db
     .update(users)
     .set({ pinHash, pinUpdatedAt: new Date() })
-    .where(eq(users.id, params.id));
+    .where(eq(users.id, id));
 
-  await db.delete(sessions).where(eq(sessions.userId, params.id));
+  await db.delete(sessions).where(eq(sessions.userId, id));
 
   return NextResponse.json({ pin });
 }

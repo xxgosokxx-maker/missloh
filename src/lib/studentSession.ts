@@ -24,7 +24,7 @@ export async function createStudentSession(userId: string): Promise<void> {
     ? "__Secure-authjs.session-token"
     : "authjs.session-token";
 
-  cookies().set({
+  (await cookies()).set({
     name: cookieName,
     value: sessionToken,
     httpOnly: true,

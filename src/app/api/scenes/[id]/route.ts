@@ -8,13 +8,14 @@ import { isOwnBlobUrl } from "@/lib/blob";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const { id } = await params;
   const body = (await req.json()) as {
     subtitle?: string;
     audioUrl?: string;
@@ -36,7 +37,7 @@ export async function PATCH(
     .from(scenes)
     .innerJoin(stories, eq(scenes.storyId, stories.id))
     .where(
-      and(eq(scenes.id, params.id), eq(stories.creatorId, session.user.id))
+      and(eq(scenes.id, id), eq(stories.creatorId, session.user.id))
     );
   if (!row) return new NextResponse("Not found", { status: 404 });
 
@@ -63,7 +64,7 @@ export async function PATCH(
     });
   }
 
-  await db.update(scenes).set(update).where(eq(scenes.id, params.id));
+  await db.update(scenes).set(update).where(eq(scenes.id, id));
 
   return NextResponse.json({
     subtitle: update.subtitle ?? row.scene.subtitle,

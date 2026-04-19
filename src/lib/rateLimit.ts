@@ -7,7 +7,7 @@ const MAX_FAILS = 5;
 
 export type LoginAttemptKind = "class_code" | "pin";
 
-export function getIp(headers: Headers): string {
+export function getIp(headers: { get(name: string): string | null }): string {
   const fwd = headers.get("x-forwarded-for") ?? "";
   const first = fwd.split(",")[0]?.trim();
   if (first) return first;

@@ -17,8 +17,9 @@ import { displayName } from "@/lib/names";
 export default async function TeacherReviewPage({
   params,
 }: {
-  params: { studentId: string; storyId: string };
+  params: Promise<{ studentId: string; storyId: string }>;
 }) {
+  const { studentId, storyId } = await params;
   const session = await auth();
 
   const [story] = await db
@@ -26,7 +27,7 @@ export default async function TeacherReviewPage({
     .from(stories)
     .where(
       and(
-        eq(stories.id, params.storyId),
+        eq(stories.id, storyId),
         eq(stories.creatorId, session!.user.id)
       )
     );
@@ -35,7 +36,7 @@ export default async function TeacherReviewPage({
   const [student] = await db
     .select({ id: users.id, name: users.name })
     .from(users)
-    .where(eq(users.id, params.studentId));
+    .where(eq(users.id, studentId));
   if (!student) notFound();
 
   const [assignment] = await db
@@ -43,8 +44,8 @@ export default async function TeacherReviewPage({
     .from(assignments)
     .where(
       and(
-        eq(assignments.studentId, params.studentId),
-        eq(assignments.storyId, params.storyId)
+        eq(assignments.studentId, studentId),
+        eq(assignments.storyId, storyId)
       )
     );
 

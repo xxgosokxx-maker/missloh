@@ -30,11 +30,12 @@ function parseSort(value: string | string[] | undefined): SortKey {
 export default async function TeacherStoriesPage({
   searchParams,
 }: {
-  searchParams: { sort?: string; archived?: string };
+  searchParams: Promise<{ sort?: string; archived?: string }>;
 }) {
+  const sp = await searchParams;
   const session = await auth();
-  const sort = parseSort(searchParams.sort);
-  const showArchived = searchParams.archived === "1";
+  const sort = parseSort(sp.sort);
+  const showArchived = sp.archived === "1";
 
   const [allStories, studentRows, myAssignments] = await Promise.all([
     db

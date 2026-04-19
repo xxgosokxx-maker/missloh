@@ -8,17 +8,18 @@ const MAX_TITLE_LEN = 200;
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const { id } = await params;
   await db
     .delete(stories)
     .where(
-      and(eq(stories.id, params.id), eq(stories.creatorId, session.user.id))
+      and(eq(stories.id, id), eq(stories.creatorId, session.user.id))
     );
 
   return NextResponse.json({ ok: true });
@@ -26,13 +27,14 @@ export async function DELETE(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const { id } = await params;
   const body = (await req.json()) as {
     title?: string;
     archived?: boolean;
@@ -66,7 +68,7 @@ export async function PATCH(
     .update(stories)
     .set(patch)
     .where(
-      and(eq(stories.id, params.id), eq(stories.creatorId, session.user.id))
+      and(eq(stories.id, id), eq(stories.creatorId, session.user.id))
     );
 
   return NextResponse.json({ ok: true });

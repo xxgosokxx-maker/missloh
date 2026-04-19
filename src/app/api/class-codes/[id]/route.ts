@@ -6,13 +6,14 @@ import { classCodes } from "@/lib/db/schema";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const { id } = await params;
   const { code, label } = (await req.json()) as {
     code?: string;
     label?: string | null;
@@ -39,7 +40,7 @@ export async function PATCH(
     const [row] = await db
       .update(classCodes)
       .set(update)
-      .where(eq(classCodes.id, params.id))
+      .where(eq(classCodes.id, id))
       .returning();
     if (!row) return new NextResponse("Not found", { status: 404 });
     return NextResponse.json(row);
@@ -54,12 +55,13 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
-  await db.delete(classCodes).where(eq(classCodes.id, params.id));
+  const { id } = await params;
+  await db.delete(classCodes).where(eq(classCodes.id, id));
   return NextResponse.json({ ok: true });
 }

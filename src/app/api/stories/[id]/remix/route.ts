@@ -9,13 +9,14 @@ export const maxDuration = 300;
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const { id } = await params;
   const { language, difficulty, title, voice } = (await req.json()) as {
     language: string;
     difficulty: number;
@@ -28,7 +29,7 @@ export async function POST(
     .select()
     .from(stories)
     .where(
-      and(eq(stories.id, params.id), eq(stories.creatorId, session.user.id))
+      and(eq(stories.id, id), eq(stories.creatorId, session.user.id))
     );
   if (!source) return new NextResponse("Not found", { status: 404 });
 

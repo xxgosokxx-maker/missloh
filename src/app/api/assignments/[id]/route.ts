@@ -6,18 +6,19 @@ import { and, eq } from "drizzle-orm";
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const { id } = await params;
   await db
     .delete(assignments)
     .where(
       and(
-        eq(assignments.id, params.id),
+        eq(assignments.id, id),
         eq(assignments.assignedBy, session.user.id)
       )
     );
@@ -27,13 +28,14 @@ export async function DELETE(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const { id } = await params;
   const body = (await req.json()) as { rating?: number | null };
   const raw = body.rating;
   const rating =
@@ -50,7 +52,7 @@ export async function PATCH(
     .set({ rating })
     .where(
       and(
-        eq(assignments.id, params.id),
+        eq(assignments.id, id),
         eq(assignments.assignedBy, session.user.id)
       )
     );

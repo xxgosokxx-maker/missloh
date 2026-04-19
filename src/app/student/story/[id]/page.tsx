@@ -9,8 +9,9 @@ import { StoryPlayer } from "@/components/StoryPlayer";
 export default async function StudentStoryPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const session = await auth();
 
   const [assignment] = await db
@@ -18,7 +19,7 @@ export default async function StudentStoryPage({
     .from(assignments)
     .where(
       and(
-        eq(assignments.storyId, params.id),
+        eq(assignments.storyId, id),
         eq(assignments.studentId, session!.user.id)
       )
     );
@@ -27,12 +28,12 @@ export default async function StudentStoryPage({
   const [story] = await db
     .select()
     .from(stories)
-    .where(eq(stories.id, params.id));
+    .where(eq(stories.id, id));
 
   const sceneRows = await db
     .select()
     .from(scenes)
-    .where(eq(scenes.storyId, params.id))
+    .where(eq(scenes.storyId, id))
     .orderBy(asc(scenes.order));
 
   const recs = await db

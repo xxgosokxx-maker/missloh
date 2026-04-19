@@ -9,14 +9,15 @@ import { StoryPlayer } from "@/components/StoryPlayer";
 export default async function TeacherStoryPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const session = await auth();
   const [story] = await db
     .select()
     .from(stories)
     .where(
-      and(eq(stories.id, params.id), eq(stories.creatorId, session!.user.id))
+      and(eq(stories.id, id), eq(stories.creatorId, session!.user.id))
     );
   if (!story) notFound();
 

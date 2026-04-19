@@ -9,13 +9,14 @@ export const maxDuration = 120;
 
 export async function POST(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user || session.user.role !== "teacher") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const { id } = await params;
   const [assignment] = await db
     .select({
       id: assignments.id,
@@ -26,7 +27,7 @@ export async function POST(
     .innerJoin(stories, eq(stories.id, assignments.storyId))
     .where(
       and(
-        eq(assignments.id, params.id),
+        eq(assignments.id, id),
         eq(stories.creatorId, session.user.id)
       )
     );
