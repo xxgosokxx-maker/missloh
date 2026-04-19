@@ -1,99 +1,125 @@
-# Miss Loh Tutoring - AI Language Learning App
-## Migration Blueprint (Vercel + Neon.tech)
+# Miss Loh's Language Master — Architecture Reference
 
-This file summarizes the features and workflows built in the Firebase/Vite prototype, structured to help Claude Code recreate the application using a PostgreSQL (Neon.tech) and Next.js/Vercel stack.
-
-### 1. App Overview
-A language learning platform where teachers can generate AI-powered picture books (stories) with native text-to-speech audio, assign them to students, and review the students' own voice recordings as they practice reading.
-
-### 2. Core Features Implemented
-*   **Role-Based Authentication:** Users are either `teacher` or `student`.
-*   **Teacher Dashboard:**
-    *   **Stories Tab:** View generated stories. Delete stories (and associated scenes in a cascaded delete). Add/Remix stories.
-    *   **Students Tab:** View all students, assign stories, remove assignments, and click into an assignment to review the student's work.
-*   **Story Generation (AI):**
-    *   Input: Title, description, difficulty, language, and art style.
-    *   Output: A list of scenes. Each scene has an `imagePrompt`, a `subtitle` (translated/target text), an `imageUrl` (generated art), and `audioBase64` (generated text-to-speech audio).
-*   **Student Dashboard:**
-    *   View all assigned stories sorted by date.
-*   **Interactive Story Player:**
-    *   **Playback:** Read the subtitle, view the generated image, and click "Listen" to hear the generated TTS pronunciation.
-    *   **Student Mode:** A "Record" button captures the student's microphone via `MediaRecorder`. When stopped, it compresses it to `.webm` and uploads it.
-    *   **Review Mode (Teacher):** When the teacher accesses the player via the Student Dashboard (e.g., `?studentId=123`), the Record button is hidden, and replaced with a "Student's Audio" playback bar fetched from the database.
+An AI-powered language-learning web app: teachers generate bilingual picture-book stories with native-voice narration, assign them to students, and use AI to score the students' pronunciation practice.
 
 ---
 
-### 3. Target Tech Stack (Vercel Ecosystem)
-Since you are migrating away from Firebase to **Vercel + Neon.tech**:
+## 1. App Overview
 
-*   **Framework:** Next.js (App Router recommended for API routes and Server Actions)
-*   **Database:** Neon.tech (Serverless Postgres)
-*   **ORM:** Drizzle ORM or Prisma (Drizzle is highly recommended for edge-compatibility)
-*   **Authentication:** NextAuth.js (Auth.js v5) or Clerk. NextAuth integrates easily with Neon.
-*   **File Storage:** **Vercel Blob** or AWS S3. *(Crucial Note: In the Firebase version, we stored audio and images as raw `base64` strings in the document. You should NOT do this in Postgres as it will bloat the database. Store files in Vercel Blob and save the URL strings in Neon.)*
+**Roles:** `teacher` or `student`.
 
----
-
-### 4. Database Schema (Relational Design)
-
-To recreate the Firestore NoSQL structures in Neon.tech, build the following relational tables:
-
-**`users`**
-*   `id` (UUID, PK)
-*   `email` (String, Unique)
-*   `name` (String)
-*   `role` (Enum: 'teacher', 'student')
-*   `created_at` (Timestamp)
-
-**`stories`**
-*   `id` (UUID, PK)
-*   `title` (String)
-*   `description` (Text)
-*   `difficulty` (Int)
-*   `language` (String)
-*   `image_style` (String)
-*   `creator_id` (UUID, FK -> users.id)
-*   `created_at` (Timestamp)
-
-**`scenes`**
-*   `id` (UUID, PK)
-*   `story_id` (UUID, FK -> stories.id, ON DELETE CASCADE)
-*   `subtitle` (Text)
-*   `image_prompt` (Text)
-*   `image_url` (String) - *URL from Vercel Blob*
-*   `audio_url` (String) - *URL from Vercel Blob*
-*   `order` (Int)
-
-**`assignments`**
-*   `id` (UUID, PK)
-*   `student_id` (UUID, FK -> users.id)
-*   `story_id` (UUID, FK -> stories.id, ON DELETE CASCADE)
-*   `assigned_by` (UUID, FK -> users.id)
-*   `created_at` (Timestamp)
-*   *Constraint: Unique(student_id, story_id)*
-
-**`recordings`**
-*   `id` (UUID, PK)
-*   `assignment_id` (UUID, FK -> assignments.id, ON DELETE CASCADE)
-*   `scene_id` (UUID, FK -> scenes.id, ON DELETE CASCADE)
-*   `student_id` (UUID, FK -> users.id)
-*   `audio_url` (String) - *URL from Vercel Blob (student's webm recording)*
-*   `recorded_at` (Timestamp)
-*   *Constraint: Unique(assignment_id, scene_id)*
+**Core loop:**
+1. Teacher generates (or uploads, or remixes) a story → AI writes scenes, illustrates them, and narrates each caption.
+2. Teacher assigns the story to one or more students.
+3. Student reads along on phone / laptop, listens to the native-voice narration, and records their own voice per scene.
+4. Teacher reviews recordings and clicks **Evaluate story** — Gemini scores every recording, writes a one-line coaching tip, and auto-sets the assignment's star rating from the average.
 
 ---
 
-### 5. Key Pitfalls & Migration Notes for Claude
+## 2. Feature Surface
 
-1.  **Deletion Cascades:** In Firebase, we had to manually batch delete Scenes when deleting a Story, and manually handle rules. In Neon + Drizzle/Prisma, ensure you set `ON DELETE CASCADE` on your foreign keys so deleting a Story natively wipes its Scenes, Assignments, and Recordings.
-2.  **Audio Processing:** 
-    *   *Firebase prototype:* `MediaRecorder` created a `.webm` Blob, which was converted to a base64 string and pushed to Firestore.
-    *   *Next.js update:* Use `client.upload()` from `@vercel/blob` to directly upload the Blob from the browser to Vercel Blob, then pass the resulting URL to your Next.js Server Action to insert the DB row into the `recordings` table.
-3.  **Teacher Review Query:** In the `StoryPlayer`, you will need a specialized Server Component or API fetch that looks for `searchParams.studentId`. If it exists, fetch the `recordings` table where `student_id = searchParams.studentId` and `scene_id = current_scene.id` to inject the audio URLs back into the props.
-4.  **AI Integration:** You will need to wire up `generateText` and `generateImage` (from `@ai-sdk/core` or `openai`) in Next.js API routes to handle the "Story Generator" component. Replace the frontend-only AI logic with protected Server Actions.
+### Teacher
+- **Story generation** (`/teacher/stories/new`) — title, description, difficulty (1-9), language, art style (15 options incl. Ghibli / Disney / Sanrio / Pokemon), narrator voice.
+- **Story upload** (`/teacher/stories/upload`) — upload page images for an existing book; captions transcribed, audio generated. Client-side image compression via `browser-image-compression`.
+- **Story library** (`/teacher`) — sorted by language → difficulty. Collapsible `<details>` cards. Per-story: Rename, Delete, Assign to student, Remix.
+- **Scene editor** (`/teacher/stories/[id]`) — modify caption (with/without regenerating audio), record your own voiceover instead of TTS.
+- **Student management** (`/teacher/students`) — create PIN student (one click, PIN revealed once), rename, reset PIN, delete, assign stories, set 1-5 star rating, click through to review.
+- **Student review** (`/teacher/students/[studentId]/story/[storyId]`) — scene-by-scene playback of student recordings alongside reference audio. One-click **Evaluate story** button for AI scoring.
+- **Class codes** (`/teacher/settings`) — manage codes students use for PIN sign-in.
 
-### 6. Suggested Claude Prompts to Start
-If you are initializing this in Claude Code, run the following:
-1. "Read CLAUDE.md. Initialize a new Next.js 14 App Router project with Tailwind, Drizzle ORM, and configure it for Neon.tech Postgres."
-2. "Create the schema.ts file matching the relational design in CLAUDE.md, and generate the Drizzle migrations."
-3. "Implement NextAuth/Auth.js with a Google Provider and scaffold the Teacher and Student dashboards based on the feature list in CLAUDE.md."
+### Student
+- **PIN sign-in** (`/auth/signin/student`) — class code + 6-digit PIN. No email required.
+- **Dashboard** (`/student`) — assigned stories + class leaderboard (ranked by total stars, own row highlighted).
+- **Practice** (`/student/story/[id]`) — illustrated reader. "Listen" plays native-voice TTS. "Record" captures up to 30s, uploads direct to Vercel Blob, saves DB row. Mobile-first UI.
+
+### Public
+- **Landing page** (`/`) — hero + rotating 4-image gallery pulled from live scene library.
+- **Features page** (`/features.html`) — static marketing sheet in `public/`.
+
+---
+
+## 3. Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 14 App Router + React 18 |
+| Styling | Tailwind CSS (custom `brand` / `accent` / `ink` palettes in `tailwind.config.ts`) |
+| Database | Neon Postgres via **Drizzle ORM** |
+| Schema sync | `bunx drizzle-kit push` (no migrations directory — direct schema sync) |
+| Auth | **NextAuth v5** (`next-auth@5.0.0-beta.25`) with `DrizzleAdapter`. Two providers: Google OAuth and a custom PIN credentials provider. |
+| File storage | **Vercel Blob** (`@vercel/blob/client`, `access: "public"`, upload via `handleUploadUrl: "/api/upload"`). |
+| AI generation | Gemini 3.1 Flash for story text. Gemini image generation for illustrations. Gemini 3.1 Flash TTS (Kore voices) for narration. |
+| AI scoring | Gemini 2.5 Flash audio-understanding via REST `generateContent` with `inlineData` (base64) + `responseMimeType: "application/json"` + `responseSchema`. See `src/lib/aiScore.ts`. |
+| Hosting | Vercel (Fluid Compute; eval endpoint uses `maxDuration = 120`). |
+
+---
+
+## 4. Database Schema
+
+Source of truth: `src/lib/db/schema.ts`.
+
+### `users`
+`id` (UUID, PK) · `email` (unique) · `name` · `image` · `emailVerified` · `role` (enum: `teacher`|`student`) · `authKind` (default `"google"`, set to `"pin"` for PIN students) · `pinHash` · `pinUpdatedAt` · `createdAt`
+
+### `class_codes`
+`id` · `code` (unique) · `label` · `createdAt` — students must supply one of these codes alongside their PIN.
+
+### `login_attempts`
+`id` · `ip` · `kind` · `attemptedAt` · `succeeded` — indexed by `(ip, attemptedAt)` for rate-limit checks on PIN sign-in.
+
+### `stories`
+`id` · `title` · `description` · `difficulty` · `language` (default `"English"`) · `imageStyle` (default `"watercolor"`) · `voice` (default `"female"`) · `creatorId` (FK users, CASCADE) · `createdAt`
+
+### `scenes`
+`id` · `storyId` (FK stories, CASCADE) · `subtitle` · `imagePrompt` · `imageUrl` · `audioUrl` · `order`
+
+### `assignments`
+`id` · `studentId` (FK users, CASCADE) · `storyId` (FK stories, CASCADE) · `assignedBy` (FK users, CASCADE) · `rating` (nullable int 1-5) · `createdAt`
+**Unique:** `(studentId, storyId)`
+
+### `recordings`
+`id` · `assignmentId` (FK assignments, CASCADE) · `sceneId` (FK scenes, CASCADE) · `studentId` (FK users, CASCADE) · `audioUrl` · `recordedAt` · `aiScore` (nullable 1-5) · `aiFeedback` (nullable text) · `aiTranscript` (nullable text) · `aiEvaluatedAt` (nullable timestamp)
+**Unique:** `(assignmentId, sceneId)` — re-records upsert with `onConflictDoUpdate`, **nulling out** all `ai_*` columns to invalidate stale scores.
+
+NextAuth tables (`accounts`, `sessions`, `verification_tokens`) follow the Auth.js adapter spec.
+
+---
+
+## 5. Key Architectural Decisions
+
+1. **Drizzle `push`, not migrations.** Schema changes are applied with `bunx drizzle-kit push` against Neon directly. No migration files in the repo.
+2. **Blob URLs in DB, never base64.** Audio and images always stored on Vercel Blob; DB only holds URLs. `isOwnBlobUrl(url)` in `src/lib/blob.ts` validates any URL the server re-fetches as a defence-in-depth measure against poisoned rows exfiltrating data.
+3. **AI scoring is text-based, not audio-to-audio.** The reference for "correct pronunciation" is the scene's subtitle, not the Kore TTS output — students shouldn't be graded on sounding like the TTS voice. `evaluateRecording({ language, subtitle, audioUrl })` sends the student audio + target text to Gemini, which returns `{ transcript, score, feedback }`.
+4. **Evaluation is batch + teacher-triggered.** `POST /api/assignments/[id]/evaluate` (teacher-only, authorized via story-creator join) runs all scene evals in parallel via `Promise.allSettled`, writes each row, computes `averageRating = round(avg(scores))`, and updates `assignments.rating`. Teacher can still manually override the rating after.
+5. **AI is invisible to students.** `POST /api/recordings` does NOT call Gemini — students see no scoring UI, no latency on save. Scoring only happens when the teacher clicks the button.
+6. **PIN students have no email.** Created via `POST /api/students` (teacher-only). PIN hashed with bcrypt, shown exactly once in `PinRevealModal`. `authKind = "pin"` distinguishes them from Google users.
+7. **First-name-only display.** `displayName()` in `src/lib/names.ts` — used everywhere a student is shown in a shared UI (leaderboard, review page) for privacy.
+8. **Cascading deletes handled by Postgres FK constraints**, not app code.
+
+---
+
+## 6. Where to Find Things
+
+| Need | File |
+|---|---|
+| DB schema | `src/lib/db/schema.ts` |
+| Auth config (Google + PIN) | `src/lib/auth.ts` |
+| Gemini story/image/TTS generation | `src/lib/ai.ts` |
+| Gemini pronunciation scoring | `src/lib/aiScore.ts` |
+| Blob URL validation | `src/lib/blob.ts` |
+| Student display-name helper | `src/lib/names.ts` |
+| Story player (practice/review/preview modes) | `src/components/StoryPlayer.tsx` |
+| PIN reveal dialog | `src/components/PinRevealModal.tsx` |
+| Upload flow | `src/components/UploadStoryForm.tsx` + `src/app/api/stories/upload/route.ts` |
+| Batch eval endpoint | `src/app/api/assignments/[id]/evaluate/route.ts` |
+
+---
+
+## 7. Conventions
+
+- **Server components** do data fetching (via Drizzle); **client components** (`"use client"`) handle interactivity, and call `router.refresh()` after mutations.
+- **API routes** return bare JSON with `NextResponse.json(...)` or `new NextResponse("Forbidden", { status: 403 })`.
+- **Auth** enforced via `await auth()` at the top of every protected route/component.
+- **`export const dynamic = "force-dynamic"`** on any page that reads current-user-specific data.
+- **Mobile-first Tailwind** — default classes target mobile, `sm:`/`md:` scale up.
+- **No comments unless non-obvious** — well-named identifiers do the job.
