@@ -1,11 +1,14 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { stories } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { stories, users, assignments } from "@/lib/db/schema";
+import { asc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { DeleteStoryButton } from "@/components/DeleteStoryButton";
 import { RenameStoryButton } from "@/components/RenameStoryButton";
 import { RemixStoryButton } from "@/components/RemixStoryButton";
+import { AssignStoryToStudentForm } from "@/components/AssignStoryToStudentForm";
+import { ClickBarrier } from "@/components/ClickBarrier";
+import { displayName } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +18,32 @@ export default async function TeacherStoriesPage() {
     .select()
     .from(stories)
     .where(eq(stories.creatorId, session!.user.id))
-    .orderBy(desc(stories.createdAt));
+    .orderBy(asc(stories.language), asc(stories.difficulty));
+
+  const studentRows = await db
+    .select({ id: users.id, name: users.name })
+    .from(users)
+    .where(eq(users.role, "student"));
+
+  const students = studentRows.map((s) => ({
+    id: s.id,
+    name: displayName(s.name),
+  }));
+
+  const myAssignments = await db
+    .select({
+      studentId: assignments.studentId,
+      storyId: assignments.storyId,
+    })
+    .from(assignments)
+    .where(eq(assignments.assignedBy, session!.user.id));
+
+  const assignedByStory = new Map<string, string[]>();
+  for (const a of myAssignments) {
+    const list = assignedByStory.get(a.storyId) ?? [];
+    list.push(a.studentId);
+    assignedByStory.set(a.storyId, list);
+  }
 
   return (
     <div className="space-y-8">
@@ -30,10 +58,7 @@ export default async function TeacherStoriesPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link
-              href="/teacher/stories/new"
-              className="btn-primary"
-            >
+            <Link href="/teacher/stories/new" className="btn-primary">
               Generate a new story →
             </Link>
             <Link
@@ -50,33 +75,61 @@ export default async function TeacherStoriesPage() {
             No stories yet. Generate or upload your first one above.
           </div>
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {myStories.map((s) => (
-              <li key={s.id} className="card flex flex-col gap-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/teacher/stories/${s.id}`}
-                      className="block font-display text-xl leading-tight tracking-tight text-ink-900 transition hover:text-brand-600"
-                    >
-                      {s.title}
-                    </Link>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <span className="badge">{s.language}</span>
-                      <span className="badge">Lv {s.difficulty}</span>
-                      <span className="badge">{s.imageStyle}</span>
+          <ul className="space-y-2">
+            {myStories.map((s) => {
+              const assigned = assignedByStory.get(s.id) ?? [];
+              return (
+                <li key={s.id}>
+                  <details className="group card !p-0 overflow-hidden">
+                    <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/teacher/stories/${s.id}`}
+                          className="block truncate text-sm font-medium text-ink-900 transition hover:text-brand-600"
+                        >
+                          {s.title}
+                        </Link>
+                        <div className="mt-0.5 text-[11px] text-ink-500">
+                          {s.language} · Lv {s.difficulty} · {s.imageStyle}
+                        </div>
+                      </div>
+                      <span className="badge shrink-0">
+                        {assigned.length} assigned
+                      </span>
+                      <ClickBarrier>
+                        <RenameStoryButton id={s.id} currentTitle={s.title} />
+                        <DeleteStoryButton id={s.id} />
+                      </ClickBarrier>
+                      <svg
+                        className="h-4 w-4 shrink-0 text-ink-400 transition group-open:rotate-180"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </summary>
+                    <div className="space-y-3 border-t border-ink-100 px-4 py-3">
+                      <AssignStoryToStudentForm
+                        storyId={s.id}
+                        students={students}
+                        assignedStudentIds={assigned}
+                      />
+                      <div className="border-t border-ink-100 pt-3">
+                        <RemixStoryButton
+                          storyId={s.id}
+                          originalTitle={s.title}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5">
-                    <RenameStoryButton id={s.id} currentTitle={s.title} />
-                    <DeleteStoryButton id={s.id} />
-                  </div>
-                </div>
-                <div className="border-t border-ink-100 pt-4">
-                  <RemixStoryButton storyId={s.id} originalTitle={s.title} />
-                </div>
-              </li>
-            ))}
+                  </details>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
