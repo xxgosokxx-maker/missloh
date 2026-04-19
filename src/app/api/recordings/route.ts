@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { recordings, assignments } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
+import { isOwnBlobUrl } from "@/lib/blob";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -15,6 +16,10 @@ export async function POST(req: Request) {
     sceneId: string;
     audioUrl: string;
   };
+
+  if (!isOwnBlobUrl(audioUrl)) {
+    return new NextResponse("Invalid audioUrl", { status: 400 });
+  }
 
   const [assignment] = await db
     .select()

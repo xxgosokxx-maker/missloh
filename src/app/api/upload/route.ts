@@ -1,6 +1,26 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { assignments } from "@/lib/db/schema";
+
+const AUDIO_CONTENT_TYPES = [
+  "audio/webm",
+  "audio/webm;codecs=opus",
+  "audio/mp4",
+  "audio/mp4;codecs=mp4a.40.2",
+  "audio/mpeg",
+  "audio/wav",
+  "audio/ogg",
+  "audio/ogg;codecs=opus",
+];
+
+// Pathnames the client is allowed to request upload tokens for.
+// - recordings/<assignmentId>/...  -> student who owns that assignment
+// - stories/voiceover/...          -> teacher
+const RECORDING_RE = /^recordings\/([0-9a-f-]{36})\/[^/]+$/i;
+const VOICEOVER_RE = /^stories\/voiceover\/[^/]+$/;
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
@@ -9,25 +29,40 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
-      onBeforeGenerateToken: async () => {
+      onBeforeGenerateToken: async (pathname) => {
         const session = await auth();
         if (!session?.user) throw new Error("Unauthorized");
+
+        const role = session.user.role;
+        const recMatch = pathname.match(RECORDING_RE);
+        const voMatch = VOICEOVER_RE.test(pathname);
+
+        if (recMatch) {
+          if (role !== "student") throw new Error("Forbidden");
+          const assignmentId = recMatch[1];
+          const [assignment] = await db
+            .select({ id: assignments.id })
+            .from(assignments)
+            .where(
+              and(
+                eq(assignments.id, assignmentId),
+                eq(assignments.studentId, session.user.id)
+              )
+            );
+          if (!assignment) throw new Error("Forbidden");
+        } else if (voMatch) {
+          if (role !== "teacher") throw new Error("Forbidden");
+        } else {
+          throw new Error("Forbidden pathname");
+        }
+
         return {
-          allowedContentTypes: [
-            "audio/webm",
-            "audio/webm;codecs=opus",
-            "audio/mp4",
-            "audio/mp4;codecs=mp4a.40.2",
-            "audio/mpeg",
-            "audio/wav",
-            "audio/ogg",
-            "audio/ogg;codecs=opus",
-          ],
+          allowedContentTypes: AUDIO_CONTENT_TYPES,
           tokenPayload: JSON.stringify({ userId: session.user.id }),
         };
       },
       onUploadCompleted: async () => {
-        // no-op; DB row is written by /api/recordings
+        // no-op; DB row is written by /api/recordings or /api/scenes/[id]
       },
     });
     return NextResponse.json(jsonResponse);
