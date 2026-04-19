@@ -40,11 +40,11 @@ export function PinRevealModal({
         {subtitle && (
           <p className="mt-1 text-sm text-ink-600">{subtitle}</p>
         )}
-        <div className="mt-5 rounded-2xl border border-ink-200 bg-ink-50 p-4 text-center">
+        <div className="mt-5 overflow-hidden rounded-2xl border border-ink-200 bg-ink-50 px-3 py-4 text-center">
           <div className="text-[10px] font-medium uppercase tracking-widest text-ink-500">
             6-digit PIN
           </div>
-          <div className="mt-2 font-mono text-4xl font-bold tracking-[0.3em] text-ink-900">
+          <div className="mt-2 font-mono text-3xl font-bold tracking-[0.2em] text-ink-900 sm:text-4xl sm:tracking-[0.3em]">
             {pin}
           </div>
         </div>
