@@ -7,6 +7,8 @@ import { AssignStoryForm } from "@/components/AssignStoryForm";
 import { RemoveAssignmentButton } from "@/components/RemoveAssignmentButton";
 import { StarRating } from "@/components/StarRating";
 import { EditStudentNameButton } from "@/components/EditStudentNameButton";
+import { CreateStudentButton } from "@/components/CreateStudentButton";
+import { RegeneratePinButton } from "@/components/RegeneratePinButton";
 import { displayName } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +17,12 @@ export default async function TeacherStudentsPage() {
   const session = await auth();
 
   const students = await db
-    .select({ id: users.id, name: users.name, email: users.email })
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      authKind: users.authKind,
+    })
     .from(users)
     .where(eq(users.role, "student"));
 
@@ -46,16 +53,19 @@ export default async function TeacherStudentsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-end justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <h2 className="font-display text-3xl tracking-tight text-ink-900">
           Students
         </h2>
-        <span className="badge">{students.length} enrolled</span>
+        <div className="flex items-center gap-3">
+          <span className="badge">{students.length} enrolled</span>
+          <CreateStudentButton />
+        </div>
       </div>
 
       {students.length === 0 && (
         <div className="card text-center text-ink-500">
-          No students have signed in yet.
+          No students yet. Click <span className="font-medium">+ New student</span> to create one with a PIN, or ask them to sign in with Google.
         </div>
       )}
 
@@ -82,8 +92,18 @@ export default async function TeacherStudentsPage() {
                         id={student.id}
                         currentName={student.name}
                       />
+                      {student.authKind === "pin" && (
+                        <RegeneratePinButton
+                          studentId={student.id}
+                          studentName={shortName}
+                        />
+                      )}
                     </div>
-                    <div className="text-xs text-ink-500">{student.email}</div>
+                    <div className="text-xs text-ink-500">
+                      {student.authKind === "pin"
+                        ? "PIN login"
+                        : student.email}
+                    </div>
                   </div>
                 </div>
                 <AssignStoryForm

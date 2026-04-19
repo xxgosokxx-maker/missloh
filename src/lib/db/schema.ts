@@ -6,6 +6,8 @@ import {
   uuid,
   primaryKey,
   uniqueIndex,
+  index,
+  boolean,
   pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
@@ -23,7 +25,38 @@ export const users = pgTable("users", {
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   role: roleEnum("role"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  pinHash: text("pin_hash"),
+  pinUpdatedAt: timestamp("pin_updated_at", { mode: "date" }),
+  authKind: text("auth_kind").notNull().default("google"),
 });
+
+export const classCodes = pgTable("class_codes", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  label: text("label"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    ip: text("ip").notNull(),
+    kind: text("kind").notNull(),
+    attemptedAt: timestamp("attempted_at", { mode: "date" }).defaultNow().notNull(),
+    succeeded: boolean("succeeded").notNull().default(false),
+  },
+  (t) => ({
+    ipAttemptedIdx: index("login_attempts_ip_attempted_idx").on(
+      t.ip,
+      t.attemptedAt
+    ),
+  })
+);
 
 export const accounts = pgTable(
   "accounts",

@@ -13,6 +13,7 @@ export default function TeacherLayout({
         <div className="mx-auto flex max-w-6xl items-center gap-1 px-4 sm:px-6">
           <TabLink href="/teacher">Stories</TabLink>
           <TabLink href="/teacher/students">Students</TabLink>
+          <TabLink href="/teacher/settings">Settings</TabLink>
         </div>
       </nav>
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
