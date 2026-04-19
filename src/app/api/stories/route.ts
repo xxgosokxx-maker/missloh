@@ -13,6 +13,8 @@ import {
 
 export const maxDuration = 300;
 
+const MAX_TITLE_LEN = 200;
+
 export async function GET() {
   const session = await auth();
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
@@ -41,10 +43,20 @@ export async function POST(req: Request) {
       imageStyle: string;
       voice?: "male" | "female";
     };
+  const trimmedTitle = typeof title === "string" ? title.trim() : "";
+  if (!trimmedTitle) {
+    return new NextResponse("Title required", { status: 400 });
+  }
+  if (trimmedTitle.length > MAX_TITLE_LEN) {
+    return new NextResponse(
+      `Title too long (max ${MAX_TITLE_LEN} characters)`,
+      { status: 400 }
+    );
+  }
   const vox: "male" | "female" = voice === "male" ? "male" : "female";
 
   const { characters, scenes: generatedScenes } = await generateStoryScenes({
-    title,
+    title: trimmedTitle,
     description,
     difficulty,
     language,
@@ -54,7 +66,7 @@ export async function POST(req: Request) {
   const [story] = await db
     .insert(stories)
     .values({
-      title,
+      title: trimmedTitle,
       description,
       difficulty,
       language,

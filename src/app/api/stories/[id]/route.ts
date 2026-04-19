@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { stories } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 
+const MAX_TITLE_LEN = 200;
+
 export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }
@@ -42,6 +44,12 @@ export async function PATCH(
     const trimmed = body.title.trim();
     if (!trimmed) {
       return new NextResponse("Title required", { status: 400 });
+    }
+    if (trimmed.length > MAX_TITLE_LEN) {
+      return new NextResponse(
+        `Title too long (max ${MAX_TITLE_LEN} characters)`,
+        { status: 400 }
+      );
     }
     patch.title = trimmed;
   }
