@@ -20,7 +20,12 @@ export default async function TeacherStudentsPage() {
     .where(eq(users.role, "student"));
 
   const teacherStories = await db
-    .select({ id: stories.id, title: stories.title })
+    .select({
+      id: stories.id,
+      title: stories.title,
+      language: stories.language,
+      difficulty: stories.difficulty,
+    })
     .from(stories)
     .where(eq(stories.creatorId, session!.user.id))
     .orderBy(desc(stories.createdAt));
