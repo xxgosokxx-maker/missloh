@@ -81,6 +81,8 @@ export function StoryGenerator() {
           <option value="90s Mecha">90s Mecha</option>
           <option value="Classic Shonen">Classic Shonen</option>
           <option value="Shojo">Shojo</option>
+          <option value="Sanrio">Sanrio</option>
+          <option value="Pokemon">Pokemon</option>
         </select>
       </label>
       <label>
