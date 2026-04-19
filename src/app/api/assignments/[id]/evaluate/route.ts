@@ -66,9 +66,12 @@ export async function POST(
   let evaluated = 0;
   let failed = 0;
   const errors: string[] = [];
+  const scores: number[] = [];
   for (const r of results) {
-    if (r.status === "fulfilled") evaluated++;
-    else {
+    if (r.status === "fulfilled") {
+      evaluated++;
+      scores.push(r.value.score);
+    } else {
       failed++;
       errors.push(
         r.reason instanceof Error ? r.reason.message : String(r.reason)
@@ -76,5 +79,15 @@ export async function POST(
     }
   }
 
-  return NextResponse.json({ evaluated, failed, errors });
+  let averageRating: number | null = null;
+  if (scores.length > 0) {
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    averageRating = Math.max(1, Math.min(5, Math.round(avg)));
+    await db
+      .update(assignments)
+      .set({ rating: averageRating })
+      .where(eq(assignments.id, assignment.id));
+  }
+
+  return NextResponse.json({ evaluated, failed, errors, averageRating });
 }
