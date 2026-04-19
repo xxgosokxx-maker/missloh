@@ -39,18 +39,33 @@ function pickAudioMime(): { mime: string; ext: string } {
 }
 
 export function StoryPlayer(props: Props) {
-  const { scenes, mode } = props;
+  const { mode } = props;
   const router = useRouter();
+  const [scenes, setScenes] = useState<PlayerScene[]>(props.scenes);
   const [idx, setIdx] = useState(0);
-  const [recording, setRecording] = useState(false);
+  const [recordRole, setRecordRole] = useState<"student" | "teacher" | null>(
+    null
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [regenerateOnSave, setRegenerateOnSave] = useState(true);
+  const [draft, setDraft] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tickTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [remaining, setRemaining] = useState(MAX_RECORD_SECONDS);
+
+  useEffect(() => {
+    setScenes(props.scenes);
+  }, [props.scenes]);
+
+  useEffect(() => {
+    setEditing(false);
+  }, [idx]);
 
   useEffect(() => {
     return () => {
@@ -75,8 +90,9 @@ export function StoryPlayer(props: Props) {
     );
   }
 
-  async function startRecord() {
-    if (mode !== "practice") return;
+  async function startRecord(role: "student" | "teacher") {
+    if (role === "student" && mode !== "practice") return;
+    if (role === "teacher" && mode !== "preview") return;
     setError(null);
     if (audioElRef.current) {
       audioElRef.current.pause();
@@ -108,23 +124,44 @@ export function StoryPlayer(props: Props) {
         setBusy(true);
         try {
           if (blob.size === 0) throw new Error("Empty recording");
-          const filename = `recordings/${props.assignmentId}/${scene.id}-${Date.now()}.${ext}`;
-          const res = await upload(filename, blob, {
-            access: "public",
-            handleUploadUrl: "/api/upload",
-            contentType: type,
-          });
-          const save = await fetch("/api/recordings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              assignmentId: props.assignmentId,
-              sceneId: scene.id,
-              audioUrl: res.url,
-            }),
-          });
-          if (!save.ok) throw new Error(`Save failed: ${await save.text()}`);
-          setLiveStudentUrl((m) => ({ ...m, [scene.id]: res.url }));
+          if (role === "student" && mode === "practice") {
+            const filename = `recordings/${props.assignmentId}/${scene.id}-${Date.now()}.${ext}`;
+            const res = await upload(filename, blob, {
+              access: "public",
+              handleUploadUrl: "/api/upload",
+              contentType: type,
+            });
+            const save = await fetch("/api/recordings", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                assignmentId: props.assignmentId,
+                sceneId: scene.id,
+                audioUrl: res.url,
+              }),
+            });
+            if (!save.ok) throw new Error(`Save failed: ${await save.text()}`);
+            setLiveStudentUrl((m) => ({ ...m, [scene.id]: res.url }));
+          } else {
+            const filename = `stories/voiceover/${scene.id}-${Date.now()}.${ext}`;
+            const res = await upload(filename, blob, {
+              access: "public",
+              handleUploadUrl: "/api/upload",
+              contentType: type,
+            });
+            const save = await fetch(`/api/scenes/${scene.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ audioUrl: res.url }),
+            });
+            if (!save.ok) throw new Error(`Save failed: ${await save.text()}`);
+            setScenes((prev) =>
+              prev.map((s) =>
+                s.id === scene.id ? { ...s, audioUrl: res.url } : s
+              )
+            );
+            router.refresh();
+          }
         } catch (e) {
           console.error(e);
           setError((e as Error).message);
@@ -134,7 +171,7 @@ export function StoryPlayer(props: Props) {
       };
       recorderRef.current = mr;
       mr.start();
-      setRecording(true);
+      setRecordRole(role);
       setRemaining(MAX_RECORD_SECONDS);
       stopTimerRef.current = setTimeout(() => {
         stopRecord();
@@ -145,6 +182,42 @@ export function StoryPlayer(props: Props) {
     } catch (e) {
       console.error(e);
       setError((e as Error).message);
+    }
+  }
+
+  async function saveEdit() {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    if (trimmed === scene.subtitle) {
+      setEditing(false);
+      return;
+    }
+    setSavingEdit(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/scenes/${scene.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subtitle: trimmed,
+          regenerateAudio: regenerateOnSave,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const { subtitle, audioUrl } = (await res.json()) as {
+        subtitle: string;
+        audioUrl: string;
+      };
+      setScenes((prev) =>
+        prev.map((s) => (s.id === scene.id ? { ...s, subtitle, audioUrl } : s))
+      );
+      setEditing(false);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError((e as Error).message);
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -165,7 +238,7 @@ export function StoryPlayer(props: Props) {
       console.error(e);
       setError((e as Error).message);
     }
-    setRecording(false);
+    setRecordRole(null);
   }
 
   const progress = ((idx + 1) / scenes.length) * 100;
@@ -204,12 +277,46 @@ export function StoryPlayer(props: Props) {
         </div>
 
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-50 via-white to-accent-50 px-6 py-8 ring-1 ring-ink-100">
-          <p
-            className="text-center font-display leading-[1.1] tracking-tight text-ink-900"
-            style={{ fontSize: "clamp(1.75rem, 4vw, 3rem)" }}
-          >
-            {scene.subtitle}
-          </p>
+          {editing ? (
+            <div className="space-y-3">
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                disabled={savingEdit}
+                rows={3}
+                className="input w-full text-center font-display leading-[1.1] tracking-tight text-ink-900"
+                style={{ fontSize: "clamp(1.25rem, 3vw, 2rem)" }}
+                autoFocus
+              />
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setEditing(false)}
+                  disabled={savingEdit}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveEdit}
+                  disabled={savingEdit || !draft.trim()}
+                  className="btn-primary"
+                >
+                  {savingEdit
+                    ? "Saving…"
+                    : regenerateOnSave
+                      ? "Save & regenerate audio"
+                      : "Save text only"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p
+              className="text-center font-display leading-[1.1] tracking-tight text-ink-900"
+              style={{ fontSize: "clamp(1.75rem, 4vw, 3rem)" }}
+            >
+              {scene.subtitle}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -229,31 +336,63 @@ export function StoryPlayer(props: Props) {
             preload="none"
           />
 
-          {mode === "practice" &&
-            (!recording ? (
+          {mode === "preview" && !editing && recordRole === null && (
+            <>
+              <button
+                onClick={() => {
+                  setDraft(scene.subtitle);
+                  setRegenerateOnSave(true);
+                  setEditing(true);
+                }}
+                className="btn-secondary"
+              >
+                <span aria-hidden>✎</span> Modify Text + Regenerate
+              </button>
+              <button
+                onClick={() => {
+                  setDraft(scene.subtitle);
+                  setRegenerateOnSave(false);
+                  setEditing(true);
+                }}
+                className="btn-secondary"
+              >
+                <span aria-hidden>✎</span> Modify Text Only
+              </button>
               <button
                 disabled={busy}
-                onClick={startRecord}
+                onClick={() => startRecord("teacher")}
                 className="btn-danger"
               >
                 <span aria-hidden>●</span>
-                {busy ? "Uploading…" : "Record"}
+                {busy ? "Uploading…" : "Record voiceover"}
               </button>
-            ) : (
-              <button
-                onClick={stopRecord}
-                className="inline-flex items-center gap-2 rounded-full bg-red-700 px-4 py-2 text-sm font-medium text-white shadow-soft transition hover:bg-red-800"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
-                </span>
-                Stop
-                <span className="tabular-nums opacity-80">
-                  {remaining}s
-                </span>
-              </button>
-            ))}
+            </>
+          )}
+
+          {mode === "practice" && recordRole === null && (
+            <button
+              disabled={busy}
+              onClick={() => startRecord("student")}
+              className="btn-danger"
+            >
+              <span aria-hidden>●</span>
+              {busy ? "Uploading…" : "Record"}
+            </button>
+          )}
+
+          {recordRole !== null && (
+            <button
+              onClick={stopRecord}
+              className="inline-flex items-center gap-2 rounded-full bg-red-700 px-4 py-2 text-sm font-medium text-white shadow-soft transition hover:bg-red-800"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+              </span>
+              Stop
+              <span className="tabular-nums opacity-80">{remaining}s</span>
+            </button>
+          )}
         </div>
 
         {error && (
