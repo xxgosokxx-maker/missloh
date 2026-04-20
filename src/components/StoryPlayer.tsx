@@ -56,6 +56,7 @@ export function StoryPlayer(props: Props) {
   const [regenerateOnSave, setRegenerateOnSave] = useState(true);
   const [draft, setDraft] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [scoring, setScoring] = useState<Record<string, boolean>>({});
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -145,7 +146,55 @@ export function StoryPlayer(props: Props) {
               }),
             });
             if (!save.ok) throw new Error(`Save failed: ${await save.text()}`);
+            const row = (await save.json()) as { id: string };
             setLiveStudentUrl((m) => ({ ...m, [scene.id]: res.url }));
+            const sceneId = scene.id;
+            setScenes((prev) =>
+              prev.map((s) =>
+                s.id === sceneId
+                  ? {
+                      ...s,
+                      aiScore: null,
+                      aiFeedback: null,
+                      aiTranscript: null,
+                    }
+                  : s
+              )
+            );
+            setScoring((m) => ({ ...m, [sceneId]: true }));
+            fetch(`/api/recordings/${row.id}/evaluate`, { method: "POST" })
+              .then(async (r) => {
+                if (!r.ok) throw new Error(await r.text());
+                return (await r.json()) as {
+                  score: number;
+                  feedback: string;
+                  transcript: string;
+                };
+              })
+              .then((result) => {
+                setScenes((prev) =>
+                  prev.map((s) =>
+                    s.id === sceneId
+                      ? {
+                          ...s,
+                          aiScore: result.score,
+                          aiFeedback: result.feedback,
+                          aiTranscript: result.transcript,
+                        }
+                      : s
+                  )
+                );
+              })
+              .catch((err) => {
+                console.error("Evaluation failed", err);
+              })
+              .finally(() => {
+                setScoring((m) => {
+                  const next = { ...m };
+                  delete next[sceneId];
+                  return next;
+                });
+              });
           } else {
             const filename = `stories/voiceover/${scene.id}-${Date.now()}.${ext}`;
             const res = await upload(filename, blob, {
@@ -418,6 +467,29 @@ export function StoryPlayer(props: Props) {
                 transcript={scene.aiTranscript}
               />
             )}
+            {mode === "practice" &&
+              (scoring[scene.id] ? (
+                <div className="mt-2 space-y-1 rounded-2xl border border-dashed border-brand-200 bg-white/60 p-3 text-xs text-ink-500">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-brand-700">
+                    <span aria-hidden>🎓</span>
+                    <span>Virtual Coach Miss Luna</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-500" />
+                    </span>
+                    Miss Luna is listening…
+                  </div>
+                </div>
+              ) : (
+                <RecordingScore
+                  score={scene.aiScore}
+                  feedback={scene.aiFeedback}
+                  transcript={scene.aiTranscript}
+                  coach="Virtual Coach Miss Luna"
+                />
+              ))}
           </div>
         )}
       </div>

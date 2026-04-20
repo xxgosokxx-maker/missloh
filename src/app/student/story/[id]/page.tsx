@@ -40,7 +40,7 @@ export default async function StudentStoryPage({
     .select()
     .from(recordings)
     .where(eq(recordings.assignmentId, assignment.id));
-  const recBySceneId = new Map(recs.map((r) => [r.sceneId, r.audioUrl]));
+  const recBySceneId = new Map(recs.map((r) => [r.sceneId, r]));
 
   return (
     <div className="space-y-6">
@@ -56,13 +56,19 @@ export default async function StudentStoryPage({
         </h1>
       </div>
       <StoryPlayer
-        scenes={sceneRows.map((s) => ({
-          id: s.id,
-          subtitle: s.subtitle,
-          imageUrl: s.imageUrl,
-          audioUrl: s.audioUrl,
-          studentAudioUrl: recBySceneId.get(s.id) ?? null,
-        }))}
+        scenes={sceneRows.map((s) => {
+          const rec = recBySceneId.get(s.id);
+          return {
+            id: s.id,
+            subtitle: s.subtitle,
+            imageUrl: s.imageUrl,
+            audioUrl: s.audioUrl,
+            studentAudioUrl: rec?.audioUrl ?? null,
+            aiScore: rec?.aiScore ?? null,
+            aiFeedback: rec?.aiFeedback ?? null,
+            aiTranscript: rec?.aiTranscript ?? null,
+          };
+        })}
         mode="practice"
         assignmentId={assignment.id}
       />

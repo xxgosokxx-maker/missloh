@@ -2,6 +2,7 @@ type Props = {
   score: number | null | undefined;
   feedback: string | null | undefined;
   transcript: string | null | undefined;
+  coach?: string;
 };
 
 const scoreStyle: Record<number, string> = {
@@ -12,17 +13,28 @@ const scoreStyle: Record<number, string> = {
   1: "bg-red-100 text-red-800 ring-red-200",
 };
 
-export function RecordingScore({ score, feedback, transcript }: Props) {
+function CoachByline({ name }: { name: string }) {
+  return (
+    <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-brand-700">
+      <span aria-hidden>🎓</span>
+      <span>{name}</span>
+    </div>
+  );
+}
+
+export function RecordingScore({ score, feedback, transcript, coach }: Props) {
   if (score == null) {
     return (
-      <div className="mt-2 rounded-2xl border border-dashed border-ink-200 bg-white/60 p-3 text-xs text-ink-500">
-        — / 5 · Not yet evaluated
+      <div className="mt-2 space-y-1 rounded-2xl border border-dashed border-ink-200 bg-white/60 p-3 text-xs text-ink-500">
+        {coach && <CoachByline name={coach} />}
+        <div>— / 5 · Not yet evaluated</div>
       </div>
     );
   }
   const pill = scoreStyle[score] ?? "bg-ink-100 text-ink-800 ring-ink-200";
   return (
     <div className="mt-2 space-y-2 rounded-2xl border border-ink-100 bg-white/80 p-3">
+      {coach && <CoachByline name={coach} />}
       <div className="flex items-center gap-2">
         <span
           className={`inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold ring-1 ${pill}`}

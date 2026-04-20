@@ -2,6 +2,7 @@ import {
   pgTable,
   text,
   integer,
+  real,
   timestamp,
   uuid,
   primaryKey,
@@ -146,7 +147,7 @@ export const assignments = pgTable(
     assignedBy: uuid("assigned_by")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    rating: integer("rating"),
+    rating: real("rating"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
   (t) => ({

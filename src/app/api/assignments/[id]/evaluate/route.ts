@@ -83,7 +83,7 @@ export async function POST(
   let averageRating: number | null = null;
   if (scores.length > 0) {
     const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-    averageRating = Math.max(1, Math.min(5, Math.round(avg)));
+    averageRating = Math.max(1, Math.min(5, Math.round(avg * 2) / 2));
     await db
       .update(assignments)
       .set({ rating: averageRating })

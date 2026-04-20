@@ -41,7 +41,7 @@ export async function PATCH(
   const rating =
     raw === null || raw === undefined
       ? null
-      : Math.max(0, Math.min(5, Math.round(Number(raw))));
+      : Math.max(0, Math.min(5, Math.round(Number(raw) * 2) / 2));
 
   if (rating !== null && Number.isNaN(rating)) {
     return new NextResponse("Invalid rating", { status: 400 });

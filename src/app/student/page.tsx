@@ -4,6 +4,7 @@ import { assignments, stories, users } from "@/lib/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { displayName } from "@/lib/names";
+import { StarRow } from "@/components/StarRow";
 
 export const dynamic = "force-dynamic";
 
@@ -131,22 +132,8 @@ export default async function StudentHomePage() {
                     </span>
                   </div>
                   {a.rating ? (
-                    <div className="mt-3 flex items-center gap-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <svg
-                          key={i}
-                          width="14"
-                          height="14"
-                          viewBox="0 0 20 20"
-                          className={
-                            i < a.rating!
-                              ? "fill-accent-400"
-                              : "fill-ink-200"
-                          }
-                        >
-                          <path d="M10 1.8l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 15.1l-5.2 2.7 1-5.8L1.6 7.9l5.8-.8L10 1.8z" />
-                        </svg>
-                      ))}
+                    <div className="mt-3">
+                      <StarRow value={a.rating} />
                     </div>
                   ) : null}
                   <p className="mt-3 line-clamp-3 text-sm text-ink-600">

@@ -74,7 +74,7 @@ Source of truth: `src/lib/db/schema.ts`.
 `id` · `storyId` (FK stories, CASCADE) · `subtitle` · `imagePrompt` · `imageUrl` · `audioUrl` · `order`
 
 ### `assignments`
-`id` · `studentId` (FK users, CASCADE) · `storyId` (FK stories, CASCADE) · `assignedBy` (FK users, CASCADE) · `rating` (nullable int 1-5) · `createdAt`
+`id` · `studentId` (FK users, CASCADE) · `storyId` (FK stories, CASCADE) · `assignedBy` (FK users, CASCADE) · `rating` (nullable `real`, 0.5-step precision 0.5–5.0) · `createdAt`
 **Unique:** `(studentId, storyId)`
 
 ### `recordings`
@@ -90,8 +90,8 @@ NextAuth tables (`accounts`, `sessions`, `verification_tokens`) follow the Auth.
 1. **Drizzle `push`, not migrations.** Schema changes are applied with `bunx drizzle-kit push` against Neon directly. No migration files in the repo.
 2. **Blob URLs in DB, never base64.** Audio and images always stored on Vercel Blob; DB only holds URLs. `isOwnBlobUrl(url)` in `src/lib/blob.ts` validates any URL the server re-fetches as a defence-in-depth measure against poisoned rows exfiltrating data.
 3. **AI scoring is text-based, not audio-to-audio.** The reference for "correct pronunciation" is the scene's subtitle, not the Kore TTS output — students shouldn't be graded on sounding like the TTS voice. `evaluateRecording({ language, subtitle, audioUrl })` sends the student audio + target text to Gemini, which returns `{ transcript, score, feedback }`.
-4. **Evaluation is batch + teacher-triggered.** `POST /api/assignments/[id]/evaluate` (teacher-only, authorized via story-creator join) runs all scene evals in parallel via `Promise.allSettled`, writes each row, computes `averageRating = round(avg(scores))`, and updates `assignments.rating`. Teacher can still manually override the rating after.
-5. **AI is invisible to students.** `POST /api/recordings` does NOT call Gemini — students see no scoring UI, no latency on save. Scoring only happens when the teacher clicks the button.
+4. **Evaluation is batch + teacher-triggered for review.** `POST /api/assignments/[id]/evaluate` (teacher-only, authorized via story-creator join) runs all scene evals in parallel via `Promise.allSettled`, writes each row, computes `averageRating = round(avg(scores) * 2) / 2` (half-star precision on the aggregate), and updates `assignments.rating`. Teacher can still manually override the rating after.
+5. **Students see their own AI feedback inline.** After a student records, the client fires `POST /api/recordings/[id]/evaluate` (owner-only) asynchronously — the `/api/recordings` save itself stays instant, and the score + tip + heard-transcript appear under the recording when Gemini returns (~5–15s). Student view attributes the feedback to **"Virtual Coach Miss Luna"** via the optional `coach` prop on `RecordingScore`; the teacher review view omits the byline. Per-scene `recordings.aiScore` stays integer 1-5; only the aggregated `assignments.rating` has half-star precision.
 6. **PIN students have no email.** Created via `POST /api/students` (teacher-only). PIN hashed with bcrypt, shown exactly once in `PinRevealModal`. `authKind = "pin"` distinguishes them from Google users.
 7. **First-name-only display.** `displayName()` in `src/lib/names.ts` — used everywhere a student is shown in a shared UI (leaderboard, review page) for privacy.
 8. **Cascading deletes handled by Postgres FK constraints**, not app code.
