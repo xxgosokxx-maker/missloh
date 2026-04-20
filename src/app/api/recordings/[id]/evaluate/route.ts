@@ -23,6 +23,7 @@ export async function POST(
       audioUrl: recordings.audioUrl,
       subtitle: scenes.subtitle,
       language: stories.language,
+      difficulty: stories.difficulty,
     })
     .from(recordings)
     .innerJoin(scenes, eq(scenes.id, recordings.sceneId))
@@ -35,6 +36,7 @@ export async function POST(
     language: row.language,
     subtitle: row.subtitle,
     audioUrl: row.audioUrl,
+    difficulty: row.difficulty,
   });
 
   await db

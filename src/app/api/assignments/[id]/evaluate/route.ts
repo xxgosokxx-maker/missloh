@@ -22,6 +22,7 @@ export async function POST(
       id: assignments.id,
       storyId: assignments.storyId,
       language: stories.language,
+      difficulty: stories.difficulty,
     })
     .from(assignments)
     .innerJoin(stories, eq(stories.id, assignments.storyId))
@@ -49,6 +50,7 @@ export async function POST(
         language: assignment.language,
         subtitle: r.subtitle,
         audioUrl: r.audioUrl,
+        difficulty: assignment.difficulty,
       }).then(async (out) => {
         await db
           .update(recordings)

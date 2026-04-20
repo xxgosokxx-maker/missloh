@@ -46,6 +46,7 @@ export async function evaluateRecording(opts: {
   language: string;
   subtitle: string;
   audioUrl: string;
+  difficulty?: number;
 }): Promise<EvaluationResult> {
   if (!isOwnBlobUrl(opts.audioUrl)) {
     throw new Error("Recording audio URL is not from our blob host");
@@ -61,18 +62,33 @@ export async function evaluateRecording(opts: {
   const b64 = buf.toString("base64");
 
   const lang = languageLabel(opts.language);
-  const prompt = `You are grading a child's pronunciation practice.
-Target language: ${lang}.
+  const diff = Math.max(1, Math.min(9, Math.round(opts.difficulty ?? 3)));
+  const level = diff <= 3 ? "beginner" : diff <= 6 ? "intermediate" : "advanced";
+  const isMandarin = /mandarin|chinese|中文/i.test(opts.language);
+  const prompt = `You are a patient, encouraging pronunciation coach for a child learning ${lang}.
+The child is practicing at difficulty ${diff}/9 (${level}).
 Target sentence: ${opts.subtitle}
-Listen to the recording and return JSON with fields { "transcript", "score", "feedback" }.
-Score rubric (integer 1..5):
-- 5: word-accurate and clearly pronounced
-- 4: understandable, minor mispronunciations or hesitation
-- 3: most words right, some noticeable errors
-- 2: partial match, significant errors or missing words
+
+Listen carefully and return JSON with fields { "transcript", "score", "feedback" }.
+
+Transcript: write what you actually heard, in the target language's script.
+
+Score on TWO axes, then combine to a single integer 1..5:
+- Pronunciation clarity: are the sounds${isMandarin ? ", tones," : ""} and stress crisp and intelligible?
+- Reading accuracy: did the child read the target sentence (vs. skipping or substituting words)?
+
+A child who read every word and tried hard on a tricky sound should score well even with a small mispronunciation. A child who skipped half the words should score low even if each spoken word was perfectly pronounced.
+
+Combined rubric (integer 1..5):
+- 5: both axes strong — all words read, sounds clear and natural
+- 4: one axis strong, the other has minor imperfections (e.g. all words read with one sound slightly off)
+- 3: noticeable issues on one or both axes, but the gist comes through
+- 2: significant errors — many words missing or large stretches unintelligible
 - 1: unintelligible or unrelated to the target sentence
-Feedback: ONE sentence in English, aimed at the student, naming a concrete fix (e.g. a specific sound or word). No filler, no "keep trying". If the student read the sentence perfectly, a short congratulatory sentence is fine.
-Transcript: write what you actually heard, in the target language's script.`;
+
+Grade gently for beginners (difficulty 1-3): minor pronunciation imperfections on tricky sounds alone should not drop below 4. Grade more strictly at advanced levels (7-9).
+
+Feedback: ONE sentence in English aimed at the child, naming ONE specific ${isMandarin ? "tone, syllable, or sound" : "sound, syllable, or stress pattern"} to work on (e.g. ${isMandarin ? `"the second tone in 你好 should rise — make your voice go up"` : `"try the /θ/ in 'three' — put your tongue between your teeth"`}). No vague filler, no "keep trying". If the child read it well, a short warm congratulation naming what they did well is fine.`;
 
   const res = await fetchWithRetry(
     `${GEMINI_BASE}/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY()}`,
