@@ -14,6 +14,8 @@ export type PlayerScene = {
   audioUrl: string | null;
   studentAudioUrl?: string | null;
   aiScore?: number | null;
+  aiAccuracy?: number | null;
+  aiClarity?: number | null;
   aiFeedback?: string | null;
   aiTranscript?: string | null;
 };
@@ -57,6 +59,7 @@ export function StoryPlayer(props: Props) {
   const [draft, setDraft] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [scoring, setScoring] = useState<Record<string, boolean>>({});
+  const [inaudible, setInaudible] = useState<Record<string, string>>({});
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -155,29 +158,50 @@ export function StoryPlayer(props: Props) {
                   ? {
                       ...s,
                       aiScore: null,
+                      aiAccuracy: null,
+                      aiClarity: null,
                       aiFeedback: null,
                       aiTranscript: null,
                     }
                   : s
               )
             );
+            setInaudible((m) => {
+              const next = { ...m };
+              delete next[sceneId];
+              return next;
+            });
             setScoring((m) => ({ ...m, [sceneId]: true }));
             fetch(`/api/recordings/${row.id}/evaluate`, { method: "POST" })
               .then(async (r) => {
                 if (!r.ok) throw new Error(await r.text());
                 return (await r.json()) as {
+                  audible: boolean;
                   score: number;
+                  accuracy: number;
+                  clarity: number;
                   feedback: string;
                   transcript: string;
                 };
               })
               .then((result) => {
+                if (!result.audible) {
+                  setInaudible((m) => ({
+                    ...m,
+                    [sceneId]:
+                      result.feedback ||
+                      "Miss Luna couldn't hear you clearly — try recording again in a quieter spot.",
+                  }));
+                  return;
+                }
                 setScenes((prev) =>
                   prev.map((s) =>
                     s.id === sceneId
                       ? {
                           ...s,
                           aiScore: result.score,
+                          aiAccuracy: result.accuracy,
+                          aiClarity: result.clarity,
                           aiFeedback: result.feedback,
                           aiTranscript: result.transcript,
                         }
@@ -463,6 +487,8 @@ export function StoryPlayer(props: Props) {
             {mode === "review" && (
               <RecordingScore
                 score={scene.aiScore}
+                accuracy={scene.aiAccuracy}
+                clarity={scene.aiClarity}
                 feedback={scene.aiFeedback}
                 transcript={scene.aiTranscript}
               />
@@ -482,9 +508,19 @@ export function StoryPlayer(props: Props) {
                     Miss Luna is listening…
                   </div>
                 </div>
+              ) : inaudible[scene.id] ? (
+                <div className="mt-2 space-y-1 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-brand-700">
+                    <span aria-hidden>🎓</span>
+                    <span>Virtual Coach Miss Luna</span>
+                  </div>
+                  <div>{inaudible[scene.id]}</div>
+                </div>
               ) : (
                 <RecordingScore
                   score={scene.aiScore}
+                  accuracy={scene.aiAccuracy}
+                  clarity={scene.aiClarity}
                   feedback={scene.aiFeedback}
                   transcript={scene.aiTranscript}
                   coach="Virtual Coach Miss Luna"

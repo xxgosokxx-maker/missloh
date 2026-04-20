@@ -61,6 +61,8 @@ export default async function TeacherReviewPage({
           sceneId: recordings.sceneId,
           audioUrl: recordings.audioUrl,
           aiScore: recordings.aiScore,
+          aiAccuracy: recordings.aiAccuracy,
+          aiClarity: recordings.aiClarity,
           aiFeedback: recordings.aiFeedback,
           aiTranscript: recordings.aiTranscript,
         })
@@ -103,6 +105,8 @@ export default async function TeacherReviewPage({
             audioUrl: s.audioUrl,
             studentAudioUrl: rec?.audioUrl ?? null,
             aiScore: rec?.aiScore ?? null,
+            aiAccuracy: rec?.aiAccuracy ?? null,
+            aiClarity: rec?.aiClarity ?? null,
             aiFeedback: rec?.aiFeedback ?? null,
             aiTranscript: rec?.aiTranscript ?? null,
           };

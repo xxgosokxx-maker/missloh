@@ -52,28 +52,37 @@ export async function POST(
         audioUrl: r.audioUrl,
         difficulty: assignment.difficulty,
       }).then(async (out) => {
-        await db
-          .update(recordings)
-          .set({
-            aiScore: out.score,
-            aiFeedback: out.feedback,
-            aiTranscript: out.transcript,
-            aiEvaluatedAt: new Date(),
-          })
-          .where(eq(recordings.id, r.recordingId));
+        if (out.audible) {
+          await db
+            .update(recordings)
+            .set({
+              aiScore: out.score,
+              aiAccuracy: out.accuracy,
+              aiClarity: out.clarity,
+              aiFeedback: out.feedback,
+              aiTranscript: out.transcript,
+              aiEvaluatedAt: new Date(),
+            })
+            .where(eq(recordings.id, r.recordingId));
+        }
         return out;
       })
     )
   );
 
   let evaluated = 0;
+  let inaudible = 0;
   let failed = 0;
   const errors: string[] = [];
   const scores: number[] = [];
   for (const r of results) {
     if (r.status === "fulfilled") {
-      evaluated++;
-      scores.push(r.value.score);
+      if (r.value.audible) {
+        evaluated++;
+        scores.push(r.value.score);
+      } else {
+        inaudible++;
+      }
     } else {
       failed++;
       errors.push(
@@ -92,5 +101,11 @@ export async function POST(
       .where(eq(assignments.id, assignment.id));
   }
 
-  return NextResponse.json({ evaluated, failed, errors, averageRating });
+  return NextResponse.json({
+    evaluated,
+    inaudible,
+    failed,
+    errors,
+    averageRating,
+  });
 }

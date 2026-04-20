@@ -39,10 +39,16 @@ export async function POST(
     difficulty: row.difficulty,
   });
 
+  if (!result.audible) {
+    return NextResponse.json(result);
+  }
+
   await db
     .update(recordings)
     .set({
       aiScore: result.score,
+      aiAccuracy: result.accuracy,
+      aiClarity: result.clarity,
       aiFeedback: result.feedback,
       aiTranscript: result.transcript,
       aiEvaluatedAt: new Date(),

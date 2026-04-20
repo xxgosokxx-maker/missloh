@@ -177,6 +177,8 @@ export const recordings = pgTable(
     audioUrl: text("audio_url").notNull(),
     recordedAt: timestamp("recorded_at", { mode: "date" }).defaultNow().notNull(),
     aiScore: integer("ai_score"),
+    aiAccuracy: integer("ai_accuracy"),
+    aiClarity: integer("ai_clarity"),
     aiFeedback: text("ai_feedback"),
     aiTranscript: text("ai_transcript"),
     aiEvaluatedAt: timestamp("ai_evaluated_at", { mode: "date" }),

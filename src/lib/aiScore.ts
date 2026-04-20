@@ -36,8 +36,21 @@ function languageLabel(language: string): string {
   return language;
 }
 
+function languageHints(language: string): string {
+  if (/mandarin|chinese|中文/i.test(language)) {
+    return "For Mandarin, prioritise tones (1-4 plus neutral). A wrong tone on a content word is a real pronunciation error; initials and finals matter too (zh/ch/sh vs z/c/s, -n vs -ng).";
+  }
+  if (/french|français/i.test(language)) {
+    return "For French, prioritise nasal vowels (on, en, an, un), the French 'r' (uvular), silent final consonants (except with liaison), and liaison between words. Do not penalise accent-free pronunciation of a word spelled without liaison.";
+  }
+  return "";
+}
+
 export type EvaluationResult = {
   score: number;
+  accuracy: number;
+  clarity: number;
+  audible: boolean;
   feedback: string;
   transcript: string;
 };
@@ -65,30 +78,33 @@ export async function evaluateRecording(opts: {
   const diff = Math.max(1, Math.min(9, Math.round(opts.difficulty ?? 3)));
   const level = diff <= 3 ? "beginner" : diff <= 6 ? "intermediate" : "advanced";
   const isMandarin = /mandarin|chinese|中文/i.test(opts.language);
+  const hints = languageHints(opts.language);
   const prompt = `You are a patient, encouraging pronunciation coach for a child learning ${lang}.
 The child is practicing at difficulty ${diff}/9 (${level}).
 Target sentence: ${opts.subtitle}
 
-Listen carefully and return JSON with fields { "transcript", "score", "feedback" }.
+${hints ? `Language focus: ${hints}\n\n` : ""}FIRST decide if the recording is audible enough to grade. If you hear only silence, static, or a few unintelligible noises, set "audible": false and leave transcript empty; still return a score of 1 and a feedback like "Miss Luna couldn't hear you clearly — try recording again in a quieter spot." In that case do not hallucinate a transcript.
+
+If audible, return JSON with all fields filled.
 
 Transcript: write what you actually heard, in the target language's script.
 
-Score on TWO axes, then combine to a single integer 1..5:
-- Pronunciation clarity: are the sounds${isMandarin ? ", tones," : ""} and stress crisp and intelligible?
-- Reading accuracy: did the child read the target sentence (vs. skipping or substituting words)?
+Score TWO separate axes, each an integer 1..5:
+- "accuracy" — reading accuracy. Did the child read the target sentence, in order, without skipping or substituting words?
+- "clarity" — pronunciation clarity. Are the sounds${isMandarin ? ", tones," : ""} and stress crisp and intelligible?
 
-A child who read every word and tried hard on a tricky sound should score well even with a small mispronunciation. A child who skipped half the words should score low even if each spoken word was perfectly pronounced.
+Also return a combined "score" (integer 1..5). Combined is roughly the lower of the two axes, nudged up by half a step when both are within 1 of each other.
 
-Combined rubric (integer 1..5):
-- 5: both axes strong — all words read, sounds clear and natural
-- 4: one axis strong, the other has minor imperfections (e.g. all words read with one sound slightly off)
-- 3: noticeable issues on one or both axes, but the gist comes through
+Rubric per axis:
+- 5: strong — no notable issues
+- 4: minor issues (one small sound off, or one word hedged)
+- 3: noticeable issues but the gist comes through
 - 2: significant errors — many words missing or large stretches unintelligible
-- 1: unintelligible or unrelated to the target sentence
+- 1: unintelligible or unrelated
 
-Grade gently for beginners (difficulty 1-3): minor pronunciation imperfections on tricky sounds alone should not drop below 4. Grade more strictly at advanced levels (7-9).
+Grade gently for beginners (difficulty 1-3): minor clarity imperfections alone should not drop clarity below 4. Grade more strictly at advanced levels (7-9).
 
-Feedback: ONE sentence in English aimed at the child, naming ONE specific ${isMandarin ? "tone, syllable, or sound" : "sound, syllable, or stress pattern"} to work on (e.g. ${isMandarin ? `"the second tone in 你好 should rise — make your voice go up"` : `"try the /θ/ in 'three' — put your tongue between your teeth"`}). No vague filler, no "keep trying". If the child read it well, a short warm congratulation naming what they did well is fine.`;
+Feedback: ONE warm sentence in English aimed at the child, naming ONE specific ${isMandarin ? "tone, syllable, or sound" : "sound, syllable, or stress pattern"} to work on. Examples of tone: ${isMandarin ? `"the second tone in ni hao should rise — make your voice go up like asking a question"` : `"try the 'th' in 'three' — put your tongue between your teeth and blow softly"`}. CRITICAL: do NOT use IPA phonetic symbols (no /θ/, /ʃ/, /ɑ/, etc.). Spell sounds in plain English letters or use the actual letters from the target word. For Mandarin, refer to syllables in pinyin (without IPA) or in the Chinese script. No vague filler, no "keep trying". If the child read it well, a short warm congratulation naming what they did well is fine.`;
 
   const res = await fetchWithRetry(
     `${GEMINI_BASE}/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY()}`,
@@ -105,15 +121,26 @@ Feedback: ONE sentence in English aimed at the child, naming ONE specific ${isMa
           },
         ],
         generationConfig: {
+          temperature: 0.2,
           responseMimeType: "application/json",
           responseSchema: {
             type: "object",
             properties: {
+              audible: { type: "boolean" },
               transcript: { type: "string" },
+              accuracy: { type: "integer", minimum: 1, maximum: 5 },
+              clarity: { type: "integer", minimum: 1, maximum: 5 },
               score: { type: "integer", minimum: 1, maximum: 5 },
               feedback: { type: "string" },
             },
-            required: ["transcript", "score", "feedback"],
+            required: [
+              "audible",
+              "transcript",
+              "accuracy",
+              "clarity",
+              "score",
+              "feedback",
+            ],
           },
         },
       }),
@@ -141,19 +168,33 @@ Feedback: ONE sentence in English aimed at the child, naming ONE specific ${isMa
       `Gemini eval returned no text${finish ? ` (finishReason=${finish})` : ""}`
     );
   }
-  let parsed: { transcript?: unknown; score?: unknown; feedback?: unknown };
+  let parsed: {
+    audible?: unknown;
+    transcript?: unknown;
+    accuracy?: unknown;
+    clarity?: unknown;
+    score?: unknown;
+    feedback?: unknown;
+  };
   try {
     parsed = JSON.parse(text);
   } catch {
     throw new Error(`Gemini eval returned non-JSON: ${text.slice(0, 200)}`);
   }
-  const score = Number(parsed.score);
-  if (!Number.isInteger(score) || score < 1 || score > 5) {
-    throw new Error(`Gemini eval returned invalid score: ${parsed.score}`);
-  }
+  const clampScore = (v: unknown, field: string): number => {
+    const n = Number(v);
+    if (!Number.isInteger(n) || n < 1 || n > 5) {
+      throw new Error(`Gemini eval returned invalid ${field}: ${v}`);
+    }
+    return n;
+  };
+  const score = clampScore(parsed.score, "score");
+  const accuracy = clampScore(parsed.accuracy, "accuracy");
+  const clarity = clampScore(parsed.clarity, "clarity");
+  const audible = parsed.audible !== false;
   const feedback =
     typeof parsed.feedback === "string" ? parsed.feedback : "";
   const transcript =
     typeof parsed.transcript === "string" ? parsed.transcript : "";
-  return { score, feedback, transcript };
+  return { score, accuracy, clarity, audible, feedback, transcript };
 }

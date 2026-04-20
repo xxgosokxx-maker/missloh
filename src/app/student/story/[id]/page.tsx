@@ -65,6 +65,8 @@ export default async function StudentStoryPage({
             audioUrl: s.audioUrl,
             studentAudioUrl: rec?.audioUrl ?? null,
             aiScore: rec?.aiScore ?? null,
+            aiAccuracy: rec?.aiAccuracy ?? null,
+            aiClarity: rec?.aiClarity ?? null,
             aiFeedback: rec?.aiFeedback ?? null,
             aiTranscript: rec?.aiTranscript ?? null,
           };

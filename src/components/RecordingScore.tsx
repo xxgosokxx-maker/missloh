@@ -1,5 +1,7 @@
 type Props = {
   score: number | null | undefined;
+  accuracy?: number | null;
+  clarity?: number | null;
   feedback: string | null | undefined;
   transcript: string | null | undefined;
   coach?: string;
@@ -22,7 +24,28 @@ function CoachByline({ name }: { name: string }) {
   );
 }
 
-export function RecordingScore({ score, feedback, transcript, coach }: Props) {
+function SubScore({ label, value }: { label: string; value: number }) {
+  const pill = scoreStyle[value] ?? "bg-ink-100 text-ink-800 ring-ink-200";
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] text-ink-600">
+      <span className="font-medium uppercase tracking-wide">{label}</span>
+      <span
+        className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold ring-1 ${pill}`}
+      >
+        {value}/5
+      </span>
+    </span>
+  );
+}
+
+export function RecordingScore({
+  score,
+  accuracy,
+  clarity,
+  feedback,
+  transcript,
+  coach,
+}: Props) {
   if (score == null) {
     return (
       <div className="mt-2 space-y-1 rounded-2xl border border-dashed border-ink-200 bg-white/60 p-3 text-xs text-ink-500">
@@ -35,7 +58,7 @@ export function RecordingScore({ score, feedback, transcript, coach }: Props) {
   return (
     <div className="mt-2 space-y-2 rounded-2xl border border-ink-100 bg-white/80 p-3">
       {coach && <CoachByline name={coach} />}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span
           className={`inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold ring-1 ${pill}`}
         >
@@ -45,6 +68,12 @@ export function RecordingScore({ score, feedback, transcript, coach }: Props) {
           <span className="text-sm text-ink-800">{feedback}</span>
         )}
       </div>
+      {(accuracy != null || clarity != null) && (
+        <div className="flex flex-wrap items-center gap-3">
+          {accuracy != null && <SubScore label="Accuracy" value={accuracy} />}
+          {clarity != null && <SubScore label="Clarity" value={clarity} />}
+        </div>
+      )}
       {transcript && (
         <div className="text-[11px] text-ink-500">
           <span className="font-medium uppercase tracking-wide">Heard: </span>

@@ -46,6 +46,8 @@ export async function POST(req: Request) {
         audioUrl,
         recordedAt: new Date(),
         aiScore: null,
+        aiAccuracy: null,
+        aiClarity: null,
         aiFeedback: null,
         aiTranscript: null,
         aiEvaluatedAt: null,

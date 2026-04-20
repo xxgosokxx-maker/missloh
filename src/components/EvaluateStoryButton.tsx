@@ -28,11 +28,15 @@ export function EvaluateStoryButton({ assignmentId }: { assignmentId: string }) 
               }
               const data = (await res.json()) as {
                 evaluated: number;
+                inaudible?: number;
                 failed: number;
                 errors: string[];
                 averageRating: number | null;
               };
               const parts = [`Scored ${data.evaluated} scene${data.evaluated === 1 ? "" : "s"}`];
+              if (data.inaudible && data.inaudible > 0) {
+                parts.push(`${data.inaudible} inaudible`);
+              }
               if (data.failed > 0) parts.push(`${data.failed} failed`);
               if (data.averageRating != null) {
                 parts.push(`★ ${data.averageRating}/5 avg`);
