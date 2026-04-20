@@ -102,13 +102,19 @@ export default async function StudentHomePage() {
       </aside>
 
       <div className="space-y-8">
-        <div>
-          <h1 className="font-display text-3xl tracking-tight text-ink-900">
-            Your stories
-          </h1>
-          <p className="mt-1 text-sm text-ink-500">
-            Tap a story to listen, read, and record yourself.
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display text-3xl tracking-tight text-ink-900">
+              Your stories
+            </h1>
+            <p className="mt-1 text-sm text-ink-500">
+              Tap a story to listen, read, and record yourself.
+            </p>
+          </div>
+          <Link href="/student/guide" className="btn-secondary shrink-0">
+            <span aria-hidden>?</span>
+            <span className="hidden sm:inline"> How it works</span>
+          </Link>
         </div>
 
         {rows.length === 0 ? (
