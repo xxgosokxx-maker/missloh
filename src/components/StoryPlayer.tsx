@@ -60,6 +60,7 @@ export function StoryPlayer(props: Props) {
   const [savingEdit, setSavingEdit] = useState(false);
   const [scoring, setScoring] = useState<Record<string, boolean>>({});
   const [inaudible, setInaudible] = useState<Record<string, string>>({});
+  const [isPlaying, setIsPlaying] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -73,6 +74,11 @@ export function StoryPlayer(props: Props) {
 
   useEffect(() => {
     setEditing(false);
+    if (audioElRef.current) {
+      audioElRef.current.pause();
+      audioElRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
   }, [idx]);
 
   useEffect(() => {
@@ -399,10 +405,26 @@ export function StoryPlayer(props: Props) {
         <div className="flex flex-wrap items-center justify-center gap-3">
           {scene.audioUrl ? (
             <button
-              onClick={() => audioElRef.current?.play()}
+              onClick={() => {
+                const el = audioElRef.current;
+                if (!el) return;
+                if (el.paused) {
+                  el.play();
+                } else {
+                  el.pause();
+                }
+              }}
               className="btn-primary"
             >
-              <span aria-hidden>▶</span> Listen
+              {isPlaying ? (
+                <>
+                  <span aria-hidden>❚❚</span> Pause
+                </>
+              ) : (
+                <>
+                  <span aria-hidden>▶</span> Listen
+                </>
+              )}
             </button>
           ) : (
             <span className="badge">audio pending</span>
@@ -411,6 +433,9 @@ export function StoryPlayer(props: Props) {
             ref={audioElRef}
             src={scene.audioUrl ?? undefined}
             preload="none"
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onEnded={() => setIsPlaying(false)}
           />
 
           {mode === "preview" && !editing && recordRole === null && (
