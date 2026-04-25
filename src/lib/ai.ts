@@ -268,7 +268,7 @@ function voiceName(gender: VoiceGender): string {
 
 function ttsStyleInstruction(language: string): string {
   if (/mandarin|chinese|中文/i.test(language)) {
-    return "請以溫暖、自然的兒童故事書朗讀語氣朗讀下面這句話，語速稍快但保持咬字清晰，並在標點符號處自然停頓：";
+    return "請以溫暖、自然的兒童故事書朗讀語氣朗讀下面這句話，語速自然平穩，咬字清晰，並在標點符號處自然停頓：";
   }
   if (/french|français|francais/i.test(language)) {
     return "Lis lentement et chaleureusement, comme un instituteur qui raconte un livre d'images à un enfant débutant, en articulant clairement et en marquant des pauses naturelles aux virgules et aux points :";
