@@ -35,6 +35,9 @@ export default async function StudentHomePage() {
     .leftJoin(assignments, eq(assignments.studentId, users.id))
     .where(eq(users.role, "student"))
     .groupBy(users.id, users.name)
+    .having(
+      sql`coalesce(sum(${assignments.rating}), 0) > 0 or ${users.id} = ${session!.user.id}`,
+    )
     .orderBy(desc(sql`stars`), users.name);
 
   return (
