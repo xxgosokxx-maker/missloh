@@ -12,10 +12,7 @@ export function RegenerateAllAudioButton({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-
-  const loading = pending || busy;
 
   function onClick() {
     if (
@@ -25,10 +22,13 @@ export function RegenerateAllAudioButton({
     ) {
       return;
     }
-    setErr(null);
-    setBusy(true);
-    fetch(`/api/stories/${storyId}/regenerate-audio`, { method: "POST" })
-      .then(async (res) => {
+    start(async () => {
+      setErr(null);
+      try {
+        const res = await fetch(
+          `/api/stories/${storyId}/regenerate-audio`,
+          { method: "POST" }
+        );
         if (!res.ok) throw new Error(await res.text());
         const data = (await res.json()) as { failed: number };
         if (data.failed > 0) {
@@ -36,22 +36,23 @@ export function RegenerateAllAudioButton({
             `${data.failed} scene${data.failed === 1 ? "" : "s"} failed.`
           );
         }
-        start(() => router.refresh());
-      })
-      .catch((e) => setErr((e as Error).message))
-      .finally(() => setBusy(false));
+        router.refresh();
+      } catch (e) {
+        setErr((e as Error).message);
+      }
+    });
   }
 
   return (
     <div className="flex items-center gap-2">
       <button
         onClick={onClick}
-        disabled={loading || sceneCount === 0}
+        disabled={pending || sceneCount === 0}
         className="rounded-full border border-ink-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-ink-700 shadow-sm transition hover:bg-white hover:text-brand-700 disabled:opacity-50"
         title="Regenerate audio for every scene in this story"
       >
         <span aria-hidden>🔊</span>{" "}
-        {loading ? "Regenerating…" : "Regenerate all audio"}
+        {pending ? "Regenerating…" : "Regenerate all audio"}
       </button>
       {err && <span className="text-xs text-red-600">{err}</span>}
     </div>

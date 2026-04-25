@@ -41,12 +41,10 @@ export default async function TeacherStoryPage({
         <h1 className="mt-2 font-display text-4xl tracking-tight text-ink-900">
           {story.title}
         </h1>
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <div className="flex flex-wrap gap-1.5">
-            <span className="badge">{story.language}</span>
-            <span className="badge">Lv {story.difficulty}</span>
-            <span className="badge">{story.imageStyle}</span>
-          </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="badge">{story.language}</span>
+          <span className="badge">Lv {story.difficulty}</span>
+          <span className="badge">{story.imageStyle}</span>
           <RegenerateAllAudioButton
             storyId={story.id}
             sceneCount={sceneRows.length}

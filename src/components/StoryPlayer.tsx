@@ -403,24 +403,21 @@ export function StoryPlayer(props: Props) {
             </span>
             {mode === "preview" && (
               <div className="flex items-center gap-1">
-                <button
-                  disabled={moving || deleting || idx === 0}
-                  onClick={() => moveScene(-1)}
-                  className="grid h-7 w-7 place-items-center rounded-full border border-ink-200 bg-white/80 text-ink-600 transition hover:bg-white hover:text-brand-700 disabled:opacity-30"
-                  title="Move scene earlier"
-                  aria-label="Move scene earlier"
-                >
-                  <span aria-hidden>↑</span>
-                </button>
-                <button
-                  disabled={moving || deleting || idx === scenes.length - 1}
-                  onClick={() => moveScene(1)}
-                  className="grid h-7 w-7 place-items-center rounded-full border border-ink-200 bg-white/80 text-ink-600 transition hover:bg-white hover:text-brand-700 disabled:opacity-30"
-                  title="Move scene later"
-                  aria-label="Move scene later"
-                >
-                  <span aria-hidden>↓</span>
-                </button>
+                {([
+                  [-1, "↑", "Move scene earlier", idx === 0],
+                  [1, "↓", "Move scene later", idx === scenes.length - 1],
+                ] as const).map(([dir, glyph, label, atEdge]) => (
+                  <button
+                    key={dir}
+                    disabled={moving || deleting || atEdge}
+                    onClick={() => moveScene(dir)}
+                    className="grid h-7 w-7 place-items-center rounded-full border border-ink-200 bg-white/80 text-ink-600 transition hover:bg-white hover:text-brand-700 disabled:opacity-30"
+                    title={label}
+                    aria-label={label}
+                  >
+                    <span aria-hidden>{glyph}</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
