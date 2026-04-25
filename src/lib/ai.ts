@@ -271,7 +271,7 @@ function ttsStyleInstruction(language: string): string {
     return "請以溫暖、自然的兒童故事書朗讀語氣朗讀下面這句話，語速自然平穩，咬字清晰，並在標點符號處自然停頓：";
   }
   if (/french|français|francais/i.test(language)) {
-    return "Lis lentement et chaleureusement, comme un instituteur qui raconte un livre d'images à un enfant débutant, en articulant clairement et en marquant des pauses naturelles aux virgules et aux points :";
+    return "Lis chaleureusement, comme un instituteur qui raconte un livre d'images à un enfant débutant, à un rythme naturel et régulier, en articulant clairement et en marquant des pauses naturelles aux virgules et aux points :";
   }
   return "Read aloud slowly and warmly, like a teacher narrating a children's picture book to a beginner learner. Articulate clearly and pause naturally at commas and periods:";
 }
