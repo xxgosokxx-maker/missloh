@@ -60,6 +60,7 @@ export function StoryPlayer(props: Props) {
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [regenAll, setRegenAll] = useState(false);
   const [scoring, setScoring] = useState<Record<string, boolean>>({});
   const [inaudible, setInaudible] = useState<Record<string, string>>({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -335,6 +336,52 @@ export function StoryPlayer(props: Props) {
     }
   }
 
+  async function regenerateAllAudio() {
+    if (mode !== "preview") return;
+    if (
+      !confirm(
+        `Regenerate audio for all ${scenes.length} scene${scenes.length === 1 ? "" : "s"}? This will overwrite the current narration.`
+      )
+    ) {
+      return;
+    }
+    setRegenAll(true);
+    setError(null);
+    if (audioElRef.current) {
+      audioElRef.current.pause();
+      audioElRef.current.currentTime = 0;
+    }
+    try {
+      const res = await fetch(
+        `/api/stories/${props.storyId}/regenerate-audio`,
+        { method: "POST" }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      const data = (await res.json()) as {
+        regenerated: number;
+        failed: number;
+        scenes: { id: string; audioUrl: string }[];
+      };
+      const map = new Map(data.scenes.map((s) => [s.id, s.audioUrl]));
+      setScenes((prev) =>
+        prev.map((s) =>
+          map.has(s.id) ? { ...s, audioUrl: map.get(s.id)! } : s
+        )
+      );
+      if (data.failed > 0) {
+        setError(
+          `${data.failed} scene${data.failed === 1 ? "" : "s"} failed to regenerate.`
+        );
+      }
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError((e as Error).message);
+    } finally {
+      setRegenAll(false);
+    }
+  }
+
   async function saveEdit() {
     const trimmed = draft.trim();
     if (!trimmed) return;
@@ -534,6 +581,15 @@ export function StoryPlayer(props: Props) {
               >
                 <span aria-hidden>●</span>
                 {busy ? "Uploading…" : "Record voiceover"}
+              </button>
+              <button
+                disabled={regenAll || busy}
+                onClick={regenerateAllAudio}
+                className="btn-secondary"
+                title="Regenerate audio for every scene in this story"
+              >
+                <span aria-hidden>🔊</span>
+                {regenAll ? "Regenerating…" : "Regenerate all audio"}
               </button>
               <button
                 disabled={moving || deleting || idx === 0}
