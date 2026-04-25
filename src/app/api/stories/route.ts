@@ -80,6 +80,7 @@ export async function POST(req: Request) {
     generateSceneAudio(
       s.subtitle,
       `stories/${story.id}/scene-${idx}.wav`,
+      language,
       vox
     ).catch((err) => {
       console.error(`[scene ${idx}] audio failed:`, err);

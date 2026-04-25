@@ -50,6 +50,7 @@ export async function POST(
   const audioUrl = await generateSceneAudio(
     subtitle,
     `stories/${story.id}/scene-${order}-${Date.now()}.wav`,
+    story.language,
     story.voice as VoiceGender
   ).catch((err) => {
     console.error(`[add scene] audio failed:`, err);

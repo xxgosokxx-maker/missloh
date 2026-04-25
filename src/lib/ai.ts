@@ -261,22 +261,35 @@ export async function uploadRenderedImage(
 export type VoiceGender = "male" | "female";
 
 function voiceName(gender: VoiceGender): string {
-  // Gemini prebuilt voices: Kore (female, warm), Puck (male, upbeat).
-  return gender === "male" ? "Puck" : "Kore";
+  // Gemini prebuilt voices, picked for warm storytelling cadence:
+  //   Aoede (female, breezy/warm), Charon (male, clear narrator).
+  return gender === "male" ? "Charon" : "Aoede";
+}
+
+function ttsStyleInstruction(language: string): string {
+  if (/mandarin|chinese|中文/i.test(language)) {
+    return "請以溫暖、緩慢的兒童故事書朗讀語氣朗讀下面這句話，咬字清晰，並在標點符號處自然停頓：";
+  }
+  if (/french|français|francais/i.test(language)) {
+    return "Lis lentement et chaleureusement, comme un instituteur qui raconte un livre d'images à un enfant débutant, en articulant clairement et en marquant des pauses naturelles aux virgules et aux points :";
+  }
+  return "Read aloud slowly and warmly, like a teacher narrating a children's picture book to a beginner learner. Articulate clearly and pause naturally at commas and periods:";
 }
 
 export async function generateSceneAudio(
   subtitle: string,
   pathname: string,
+  language: string,
   gender: VoiceGender = "female"
 ): Promise<string> {
+  const styled = `${ttsStyleInstruction(language)}\n\n${subtitle}`;
   const res = await fetchWithRetry(
     `${GEMINI_BASE}/models/gemini-3.1-flash-tts-preview:generateContent?key=${GEMINI_KEY()}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: subtitle }] }],
+        contents: [{ parts: [{ text: styled }] }],
         generationConfig: {
           responseModalities: ["AUDIO"],
           speechConfig: {

@@ -65,6 +65,7 @@ export async function POST(req: Request) {
       generateSceneAudio(
         s.subtitle.trim(),
         `stories/${story.id}/scene-${idx}.wav`,
+        language,
         voice
       ).catch((err) => {
         console.error(`[upload scene ${idx}] audio failed:`, err);

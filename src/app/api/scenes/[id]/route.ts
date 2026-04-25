@@ -49,6 +49,7 @@ export async function PATCH(
       update.audioUrl = await generateSceneAudio(
         newSubtitle,
         pathname,
+        row.story.language,
         row.story.voice as VoiceGender
       );
     }

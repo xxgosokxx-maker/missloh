@@ -70,6 +70,7 @@ export async function POST(
       const audioUrl = await generateSceneAudio(
         subtitle,
         `stories/${newStory.id}/scene-${idx}.wav`,
+        language,
         vox
       ).catch((err) => {
         console.error(`[remix scene ${idx}] audio failed:`, err);
