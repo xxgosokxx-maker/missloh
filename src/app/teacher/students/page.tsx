@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users, assignments, stories } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { asc, eq, desc, sql } from "drizzle-orm";
 import Link from "next/link";
 import { AssignStoryForm } from "@/components/AssignStoryForm";
 import { RemoveAssignmentButton } from "@/components/RemoveAssignmentButton";
@@ -11,6 +11,7 @@ import { CreateStudentButton } from "@/components/CreateStudentButton";
 import { RegeneratePinButton } from "@/components/RegeneratePinButton";
 import { DeleteStudentButton } from "@/components/DeleteStudentButton";
 import { ClickBarrier } from "@/components/ClickBarrier";
+import { StudentTagSelect } from "@/components/StudentTagSelect";
 import { displayName } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +25,11 @@ export default async function TeacherStudentsPage() {
       name: users.name,
       email: users.email,
       authKind: users.authKind,
+      tag: users.tag,
     })
     .from(users)
-    .where(eq(users.role, "student"));
+    .where(eq(users.role, "student"))
+    .orderBy(sql`${users.tag} nulls last`, asc(users.name));
 
   const teacherStories = await db
     .select({
@@ -99,6 +102,10 @@ export default async function TeacherStudentsPage() {
                     {theirs.length} assigned
                   </span>
                   <ClickBarrier>
+                    <StudentTagSelect
+                      studentId={student.id}
+                      initial={student.tag}
+                    />
                     <EditStudentNameButton
                       id={student.id}
                       currentName={student.name}

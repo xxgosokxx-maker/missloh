@@ -29,6 +29,7 @@ export const users = pgTable("users", {
   pinHash: text("pin_hash"),
   pinUpdatedAt: timestamp("pin_updated_at", { mode: "date" }),
   authKind: text("auth_kind").notNull().default("google"),
+  tag: text("tag"),
 });
 
 export const classCodes = pgTable("class_codes", {

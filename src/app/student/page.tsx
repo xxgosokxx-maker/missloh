@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { assignments, stories, users } from "@/lib/db/schema";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { StarRow } from "@/components/StarRow";
 import { Leaderboard } from "@/components/Leaderboard";
@@ -25,20 +25,35 @@ export default async function StudentHomePage() {
     .where(eq(assignments.studentId, session!.user.id))
     .orderBy(desc(assignments.createdAt));
 
-  const leaderboardRaw = await db
-    .select({
-      studentId: users.id,
-      name: users.name,
-      stars: sql<number>`coalesce(sum(${assignments.rating}), 0)`.as("stars"),
-    })
+  const [me] = await db
+    .select({ tag: users.tag })
     .from(users)
-    .leftJoin(assignments, eq(assignments.studentId, users.id))
-    .where(eq(users.role, "student"))
-    .groupBy(users.id, users.name)
-    .having(
-      sql`coalesce(sum(${assignments.rating}), 0) > 0 or ${users.id} = ${session!.user.id}`,
-    )
-    .orderBy(desc(sql`stars`), users.name);
+    .where(eq(users.id, session!.user.id));
+  const myTag = me?.tag ?? null;
+
+  const leaderboardRaw = myTag
+    ? await db
+        .select({
+          studentId: users.id,
+          name: users.name,
+          stars: sql<number>`coalesce(sum(${assignments.rating}), 0)`.as("stars"),
+        })
+        .from(users)
+        .leftJoin(assignments, eq(assignments.studentId, users.id))
+        .where(and(eq(users.role, "student"), eq(users.tag, myTag)))
+        .groupBy(users.id, users.name)
+        .orderBy(desc(sql`stars`), users.name)
+    : await db
+        .select({
+          studentId: users.id,
+          name: users.name,
+          stars: sql<number>`coalesce(sum(${assignments.rating}), 0)`.as("stars"),
+        })
+        .from(users)
+        .leftJoin(assignments, eq(assignments.studentId, users.id))
+        .where(eq(users.id, session!.user.id))
+        .groupBy(users.id, users.name)
+        .orderBy(desc(sql`stars`), users.name);
   const leaderboard = leaderboardRaw.map((r) => ({
     ...r,
     stars: Number(r.stars) || 0,

@@ -1,11 +1,11 @@
 import { db } from "@/lib/db";
 import { assignments, users } from "@/lib/db/schema";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { Leaderboard } from "@/components/Leaderboard";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeacherLeaderboardPage() {
+async function boardFor(tag: "French" | "Mandarin") {
   const rows = await db
     .select({
       studentId: users.id,
@@ -14,31 +14,66 @@ export default async function TeacherLeaderboardPage() {
     })
     .from(users)
     .leftJoin(assignments, eq(assignments.studentId, users.id))
-    .where(eq(users.role, "student"))
+    .where(and(eq(users.role, "student"), eq(users.tag, tag)))
     .groupBy(users.id, users.name)
-    .having(sql`coalesce(sum(${assignments.rating}), 0) > 0`)
     .orderBy(desc(sql`stars`), users.name);
+  return rows.map((r) => ({ ...r, stars: Number(r.stars) || 0 }));
+}
 
-  const board = rows.map((r) => ({ ...r, stars: Number(r.stars) || 0 }));
+export default async function TeacherLeaderboardPage() {
+  const [french, mandarin] = await Promise.all([
+    boardFor("French"),
+    boardFor("Mandarin"),
+  ]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-3xl tracking-tight text-ink-900">
-            Leaderboard
-          </h2>
-          <p className="mt-1 text-sm text-ink-500">
-            Ranked by total stars across all assignments. Students with 0 stars
-            are hidden.
-          </p>
-        </div>
-        <span className="badge">{board.length} ranked</span>
+      <div>
+        <h2 className="font-display text-3xl tracking-tight text-ink-900">
+          Leaderboard
+        </h2>
+        <p className="mt-1 text-sm text-ink-500">
+          Ranked by total stars across all assignments. Tag a student on the
+          Students page to include them in a board.
+        </p>
       </div>
 
-      <div className="card max-w-xl">
-        <Leaderboard rows={board} emptyLabel="No students have earned stars yet." />
+      <div className="grid gap-4 md:grid-cols-2">
+        <BoardCard title="French" count={french.length}>
+          <Leaderboard
+            rows={french}
+            emptyLabel="No students tagged French yet."
+          />
+        </BoardCard>
+        <BoardCard title="Mandarin" count={mandarin.length}>
+          <Leaderboard
+            rows={mandarin}
+            emptyLabel="No students tagged Mandarin yet."
+          />
+        </BoardCard>
       </div>
+    </div>
+  );
+}
+
+function BoardCard({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="card">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="font-display text-xl tracking-tight text-ink-900">
+          {title}
+        </h3>
+        <span className="badge">{count} ranked</span>
+      </div>
+      {children}
     </div>
   );
 }
