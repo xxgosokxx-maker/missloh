@@ -60,7 +60,6 @@ export function StoryPlayer(props: Props) {
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
-  const [regenAll, setRegenAll] = useState(false);
   const [scoring, setScoring] = useState<Record<string, boolean>>({});
   const [inaudible, setInaudible] = useState<Record<string, string>>({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -336,52 +335,6 @@ export function StoryPlayer(props: Props) {
     }
   }
 
-  async function regenerateAllAudio() {
-    if (mode !== "preview") return;
-    if (
-      !confirm(
-        `Regenerate audio for all ${scenes.length} scene${scenes.length === 1 ? "" : "s"}? This will overwrite the current narration.`
-      )
-    ) {
-      return;
-    }
-    setRegenAll(true);
-    setError(null);
-    if (audioElRef.current) {
-      audioElRef.current.pause();
-      audioElRef.current.currentTime = 0;
-    }
-    try {
-      const res = await fetch(
-        `/api/stories/${props.storyId}/regenerate-audio`,
-        { method: "POST" }
-      );
-      if (!res.ok) throw new Error(await res.text());
-      const data = (await res.json()) as {
-        regenerated: number;
-        failed: number;
-        scenes: { id: string; audioUrl: string }[];
-      };
-      const map = new Map(data.scenes.map((s) => [s.id, s.audioUrl]));
-      setScenes((prev) =>
-        prev.map((s) =>
-          map.has(s.id) ? { ...s, audioUrl: map.get(s.id)! } : s
-        )
-      );
-      if (data.failed > 0) {
-        setError(
-          `${data.failed} scene${data.failed === 1 ? "" : "s"} failed to regenerate.`
-        );
-      }
-      router.refresh();
-    } catch (e) {
-      console.error(e);
-      setError((e as Error).message);
-    } finally {
-      setRegenAll(false);
-    }
-  }
-
   async function saveEdit() {
     const trimmed = draft.trim();
     if (!trimmed) return;
@@ -443,11 +396,35 @@ export function StoryPlayer(props: Props) {
   return (
     <div className="space-y-5">
       <div className="card space-y-6 p-4 sm:p-8">
-        <div className="flex items-center justify-between">
-          <span className="badge">
-            Scene {idx + 1} of {scenes.length}
-          </span>
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink-100 mx-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="badge">
+              Scene {idx + 1} of {scenes.length}
+            </span>
+            {mode === "preview" && (
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={moving || deleting || idx === 0}
+                  onClick={() => moveScene(-1)}
+                  className="grid h-7 w-7 place-items-center rounded-full border border-ink-200 bg-white/80 text-ink-600 transition hover:bg-white hover:text-brand-700 disabled:opacity-30"
+                  title="Move scene earlier"
+                  aria-label="Move scene earlier"
+                >
+                  <span aria-hidden>↑</span>
+                </button>
+                <button
+                  disabled={moving || deleting || idx === scenes.length - 1}
+                  onClick={() => moveScene(1)}
+                  className="grid h-7 w-7 place-items-center rounded-full border border-ink-200 bg-white/80 text-ink-600 transition hover:bg-white hover:text-brand-700 disabled:opacity-30"
+                  title="Move scene later"
+                  aria-label="Move scene later"
+                >
+                  <span aria-hidden>↓</span>
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink-100">
             <div
               className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-500"
               style={{ width: `${progress}%` }}
@@ -485,6 +462,16 @@ export function StoryPlayer(props: Props) {
                 style={{ fontSize: "clamp(1.25rem, 3vw, 2rem)" }}
                 autoFocus
               />
+              <label className="flex cursor-pointer items-center justify-center gap-2 text-xs font-medium text-ink-600">
+                <input
+                  type="checkbox"
+                  checked={regenerateOnSave}
+                  onChange={(e) => setRegenerateOnSave(e.target.checked)}
+                  disabled={savingEdit}
+                  className="h-3.5 w-3.5 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
+                />
+                Regenerate audio after saving
+              </label>
               <div className="flex items-center justify-center gap-2">
                 <button
                   onClick={() => setEditing(false)}
@@ -562,17 +549,7 @@ export function StoryPlayer(props: Props) {
                 }}
                 className="btn-secondary"
               >
-                <span aria-hidden>✎</span> Modify Text + Regenerate
-              </button>
-              <button
-                onClick={() => {
-                  setDraft(scene.subtitle);
-                  setRegenerateOnSave(false);
-                  setEditing(true);
-                }}
-                className="btn-secondary"
-              >
-                <span aria-hidden>✎</span> Modify Text Only
+                <span aria-hidden>✎</span> Edit text
               </button>
               <button
                 disabled={busy}
@@ -581,33 +558,6 @@ export function StoryPlayer(props: Props) {
               >
                 <span aria-hidden>●</span>
                 {busy ? "Uploading…" : "Record voiceover"}
-              </button>
-              <button
-                disabled={regenAll || busy}
-                onClick={regenerateAllAudio}
-                className="btn-secondary"
-                title="Regenerate audio for every scene in this story"
-              >
-                <span aria-hidden>🔊</span>
-                {regenAll ? "Regenerating…" : "Regenerate all audio"}
-              </button>
-              <button
-                disabled={moving || deleting || idx === 0}
-                onClick={() => moveScene(-1)}
-                className="btn-secondary"
-                title="Move scene earlier"
-                aria-label="Move scene earlier"
-              >
-                <span aria-hidden>↑</span> Move earlier
-              </button>
-              <button
-                disabled={moving || deleting || idx === scenes.length - 1}
-                onClick={() => moveScene(1)}
-                className="btn-secondary"
-                title="Move scene later"
-                aria-label="Move scene later"
-              >
-                <span aria-hidden>↓</span> Move later
               </button>
               <button
                 disabled={deleting || moving || scenes.length <= 1}
