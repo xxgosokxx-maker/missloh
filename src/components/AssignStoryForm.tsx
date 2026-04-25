@@ -18,16 +18,21 @@ export function AssignStoryForm({
   studentId,
   stories,
   assignedStoryIds,
+  emptyLabel = "No stories yet",
 }: {
   studentId: string;
   stories: StoryOption[];
   assignedStoryIds: string[];
+  emptyLabel?: string;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const available = stories.filter((s) => !assignedStoryIds.includes(s.id));
   const [pick, setPick] = useState(available[0]?.id ?? "");
 
+  if (stories.length === 0) {
+    return <span className="text-xs text-ink-500">{emptyLabel}</span>;
+  }
   if (available.length === 0) {
     return <span className="badge">All assigned</span>;
   }

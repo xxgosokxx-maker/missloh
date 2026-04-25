@@ -12,10 +12,12 @@ export function AssignStoryToStudentForm({
   storyId,
   students,
   assignedStudentIds,
+  emptyLabel = "No students yet",
 }: {
   storyId: string;
   students: StudentOption[];
   assignedStudentIds: string[];
+  emptyLabel?: string;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -26,9 +28,7 @@ export function AssignStoryToStudentForm({
   const [pick, setPick] = useState(available[0]?.id ?? "");
 
   if (students.length === 0) {
-    return (
-      <span className="text-xs text-ink-500">No students yet</span>
-    );
+    return <span className="text-xs text-ink-500">{emptyLabel}</span>;
   }
   if (available.length === 0) {
     return <span className="badge">All assigned</span>;

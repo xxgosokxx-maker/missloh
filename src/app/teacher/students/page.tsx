@@ -134,8 +134,19 @@ export default async function TeacherStudentsPage() {
                 <div className="space-y-3 border-t border-ink-100 px-4 py-3">
                   <AssignStoryForm
                     studentId={student.id}
-                    stories={teacherStories}
+                    stories={
+                      student.tag
+                        ? teacherStories.filter(
+                            (s) => s.language === student.tag
+                          )
+                        : []
+                    }
                     assignedStoryIds={theirs.map((t) => t.storyId)}
+                    emptyLabel={
+                      student.tag
+                        ? `No ${student.tag} stories yet`
+                        : "Set a language tag above to assign stories"
+                    }
                   />
                   {theirs.length > 0 && (
                     <ul className="divide-y divide-ink-100">
