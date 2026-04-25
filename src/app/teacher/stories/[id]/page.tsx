@@ -5,6 +5,7 @@ import { and, eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { StoryPlayer } from "@/components/StoryPlayer";
+import { AddSceneForm } from "@/components/AddSceneForm";
 
 export default async function TeacherStoryPage({
   params,
@@ -53,7 +54,9 @@ export default async function TeacherStoryPage({
           audioUrl: s.audioUrl,
         }))}
         mode="preview"
+        storyId={story.id}
       />
+      <AddSceneForm storyId={story.id} />
     </div>
   );
 }

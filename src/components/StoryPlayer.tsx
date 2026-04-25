@@ -21,7 +21,7 @@ export type PlayerScene = {
 };
 
 type Props =
-  | { scenes: PlayerScene[]; mode: "preview" }
+  | { scenes: PlayerScene[]; mode: "preview"; storyId: string }
   | { scenes: PlayerScene[]; mode: "review" }
   | { scenes: PlayerScene[]; mode: "practice"; assignmentId: string };
 
@@ -58,6 +58,8 @@ export function StoryPlayer(props: Props) {
   const [regenerateOnSave, setRegenerateOnSave] = useState(true);
   const [draft, setDraft] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [scoring, setScoring] = useState<Record<string, boolean>>({});
   const [inaudible, setInaudible] = useState<Record<string, string>>({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -268,6 +270,71 @@ export function StoryPlayer(props: Props) {
     }
   }
 
+  async function moveScene(dir: -1 | 1) {
+    if (mode !== "preview") return;
+    const target = idx + dir;
+    if (target < 0 || target >= scenes.length) return;
+
+    const prev = scenes;
+    const next = [...prev];
+    [next[idx], next[target]] = [next[target], next[idx]];
+
+    setMoving(true);
+    setError(null);
+    setScenes(next);
+    setIdx(target);
+
+    try {
+      const res = await fetch(`/api/stories/${props.storyId}/scenes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: next.map((s) => s.id) }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError((e as Error).message);
+      setScenes(prev);
+      setIdx(idx);
+    } finally {
+      setMoving(false);
+    }
+  }
+
+  async function deleteScene() {
+    if (mode !== "preview") return;
+    if (scenes.length <= 1) {
+      setError("A story must have at least one scene. Delete the story instead.");
+      return;
+    }
+    if (
+      !confirm(
+        `Delete scene ${idx + 1}? Any student recordings of this scene will also be deleted.`
+      )
+    ) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    const sceneId = scene.id;
+    try {
+      const res = await fetch(`/api/scenes/${sceneId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(await res.text());
+      setScenes((prev) => {
+        const next = prev.filter((s) => s.id !== sceneId);
+        setIdx((i) => Math.min(i, Math.max(0, next.length - 1)));
+        return next;
+      });
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   async function saveEdit() {
     const trimmed = draft.trim();
     if (!trimmed) return;
@@ -467,6 +534,37 @@ export function StoryPlayer(props: Props) {
               >
                 <span aria-hidden>●</span>
                 {busy ? "Uploading…" : "Record voiceover"}
+              </button>
+              <button
+                disabled={moving || deleting || idx === 0}
+                onClick={() => moveScene(-1)}
+                className="btn-secondary"
+                title="Move scene earlier"
+                aria-label="Move scene earlier"
+              >
+                <span aria-hidden>↑</span> Move earlier
+              </button>
+              <button
+                disabled={moving || deleting || idx === scenes.length - 1}
+                onClick={() => moveScene(1)}
+                className="btn-secondary"
+                title="Move scene later"
+                aria-label="Move scene later"
+              >
+                <span aria-hidden>↓</span> Move later
+              </button>
+              <button
+                disabled={deleting || moving || scenes.length <= 1}
+                onClick={deleteScene}
+                className="btn-secondary"
+                title={
+                  scenes.length <= 1
+                    ? "A story must have at least one scene"
+                    : "Delete this scene"
+                }
+              >
+                <span aria-hidden>🗑</span>
+                {deleting ? "Deleting…" : "Delete scene"}
               </button>
             </>
           )}
