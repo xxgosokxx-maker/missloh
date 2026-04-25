@@ -20,7 +20,7 @@ export function UploadStoryForm() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [language, setLanguage] = useState("Mandarin");
-  const [level, setLevel] = useState(2);
+  const [level, setLevel] = useState(1);
   const [voice, setVoice] = useState<"female" | "male">("female");
   const [scenesList, setScenesList] = useState<SceneDraft[]>([]);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -171,7 +171,7 @@ export function UploadStoryForm() {
       </label>
 
       <label>
-        <span className="label">Level (1–9)</span>
+        <span className="label">Level</span>
         <select
           required
           value={level}
@@ -179,11 +179,9 @@ export function UploadStoryForm() {
           className="input"
           disabled={loading}
         >
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
+          <option value={1}>1 — Beginner</option>
+          <option value={2}>2 — Intermediate</option>
+          <option value={3}>3 — Advanced</option>
         </select>
       </label>
 

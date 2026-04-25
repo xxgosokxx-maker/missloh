@@ -3,7 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { scenes, stories } from "@/lib/db/schema";
-import { generateSceneAudio, type VoiceGender } from "@/lib/ai";
+import { clampLevel, generateSceneAudio, type VoiceGender } from "@/lib/ai";
 import { isOwnBlobUrl } from "@/lib/blob";
 
 export async function PATCH(
@@ -50,6 +50,7 @@ export async function PATCH(
         newSubtitle,
         pathname,
         row.story.language,
+        clampLevel(row.story.difficulty),
         row.story.voice as VoiceGender
       );
     }

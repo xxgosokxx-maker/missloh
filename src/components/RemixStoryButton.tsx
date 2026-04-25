@@ -67,15 +67,12 @@ export function RemixStoryButton({
           </select>
         </label>
         <label>
-          <span className="label">Difficulty (1–9)</span>
-          <input
-            type="number"
-            name="difficulty"
-            min={1}
-            max={9}
-            defaultValue={3}
-            className="input"
-          />
+          <span className="label">Level</span>
+          <select name="difficulty" defaultValue="1" className="input">
+            <option value="1">1 — Beginner</option>
+            <option value="2">2 — Intermediate</option>
+            <option value="3">3 — Advanced</option>
+          </select>
         </label>
       </div>
       <label className="mt-3 block">

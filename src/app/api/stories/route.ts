@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { stories, scenes } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import {
+  clampLevel,
   generateSceneAudio,
   generateStoryScenes,
   renderSceneImage,
@@ -54,11 +55,12 @@ export async function POST(req: Request) {
     );
   }
   const vox: "male" | "female" = voice === "male" ? "male" : "female";
+  const level = clampLevel(difficulty);
 
   const { characters, scenes: generatedScenes } = await generateStoryScenes({
     title: trimmedTitle,
     description,
-    difficulty,
+    difficulty: level,
     language,
     imageStyle,
   });
@@ -68,7 +70,7 @@ export async function POST(req: Request) {
     .values({
       title: trimmedTitle,
       description,
-      difficulty,
+      difficulty: level,
       language,
       imageStyle,
       voice: vox,
@@ -81,6 +83,7 @@ export async function POST(req: Request) {
       s.subtitle,
       `stories/${story.id}/scene-${idx}.wav`,
       language,
+      level,
       vox
     ).catch((err) => {
       console.error(`[scene ${idx}] audio failed:`, err);

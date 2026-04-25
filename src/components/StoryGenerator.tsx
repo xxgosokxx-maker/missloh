@@ -86,15 +86,12 @@ export function StoryGenerator() {
         </select>
       </label>
       <label>
-        <span className="label">Difficulty (1–9)</span>
-        <input
-          type="number"
-          name="difficulty"
-          min={1}
-          max={9}
-          defaultValue={2}
-          className="input"
-        />
+        <span className="label">Level</span>
+        <select required name="difficulty" defaultValue="1" className="input">
+          <option value="1">1 — Beginner</option>
+          <option value="2">2 — Intermediate</option>
+          <option value="3">3 — Advanced</option>
+        </select>
       </label>
       <label className="sm:col-span-2">
         <span className="label">Narrator voice</span>

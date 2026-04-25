@@ -28,6 +28,15 @@ const SubtitleListSchema = z.object({
   subtitles: z.array(z.string()),
 });
 
+export type StoryLevel = 1 | 2 | 3;
+
+export function clampLevel(value: unknown): StoryLevel {
+  const n = Math.round(Number(value));
+  if (n <= 1) return 1;
+  if (n >= 3) return 3;
+  return 2;
+}
+
 export type GenerateStoryInput = {
   title: string;
   description: string;
@@ -74,6 +83,7 @@ async function fetchWithRetry(
 
 export async function generateStoryScenes(input: GenerateStoryInput) {
   const lang = languageLabel(input.language);
+  const level = clampLevel(input.difficulty);
   const { object } = await generateObject({
     model: google("gemini-3.1-pro-preview"),
     schema: StorySchema,
@@ -82,10 +92,10 @@ Write a short picture book for a student learning ${lang}.
 
 Title: ${input.title}
 Description: ${input.description}
-Difficulty (1 = absolute beginner, 9 = advanced near-native): ${input.difficulty}
-- Level 1-3: very short sentences, present tense, high-frequency vocabulary only
-- Level 4-6: compound sentences, common past/future tenses, everyday vocabulary
-- Level 7-9: longer sentences, varied tenses and connectors, richer vocabulary and idiom
+Difficulty (1 = beginner, 3 = advanced near-native): ${level}
+- Level 1: very short sentences, present tense, high-frequency vocabulary only
+- Level 2: compound sentences, common past/future tenses, everyday vocabulary
+- Level 3: longer sentences, varied tenses and connectors, richer vocabulary and idiom
 
 Return a character bible AND 5-7 scenes.
 
@@ -104,13 +114,14 @@ export async function regenerateSubtitles(opts: {
   imagePrompts: string[];
 }): Promise<string[]> {
   const lang = languageLabel(opts.language);
+  const level = clampLevel(opts.difficulty);
   const { object } = await generateObject({
     model: google("gemini-3.1-pro-preview"),
     schema: SubtitleListSchema,
-    prompt: `You are remixing an existing picture book into ${lang} for a student at difficulty ${opts.difficulty} (1 = absolute beginner, 9 = advanced near-native).
-- Level 1-3: very short sentences, present tense, high-frequency vocabulary only
-- Level 4-6: compound sentences, common past/future tenses, everyday vocabulary
-- Level 7-9: longer sentences, varied tenses and connectors, richer vocabulary and idiom
+    prompt: `You are remixing an existing picture book into ${lang} for a student at difficulty ${level} (1 = beginner, 3 = advanced near-native).
+- Level 1: very short sentences, present tense, high-frequency vocabulary only
+- Level 2: compound sentences, common past/future tenses, everyday vocabulary
+- Level 3: longer sentences, varied tenses and connectors, richer vocabulary and idiom
 
 The original story stays the same visually. You MUST return exactly ${opts.imagePrompts.length} subtitles, one per scene, in order, each written IN ${lang}. For Chinese: use ONLY Traditional characters (e.g. 學, 愛, 們, 說, 買) — never Simplified (e.g. 学, 爱, 们, 说, 买).
 
@@ -266,23 +277,42 @@ function voiceName(gender: VoiceGender): string {
   return gender === "male" ? "Charon" : "Aoede";
 }
 
-function ttsStyleInstruction(language: string): string {
+function ttsStyleInstruction(language: string, level: StoryLevel): string {
   if (/mandarin|chinese|中文/i.test(language)) {
+    if (level === 1) {
+      return "請以溫暖、緩慢、清晰的兒童故事書朗讀語氣朗讀下面這句話，語速明顯放慢，每個字都咬字清楚，並在標點符號處明顯停頓，方便初學者跟讀：";
+    }
+    if (level === 3) {
+      return "請以溫暖、輕快活潑的兒童故事書朗讀語氣朗讀下面這句話，語速比平常稍快但仍然清楚自然，在標點符號處自然停頓：";
+    }
     return "請以溫暖、自然的兒童故事書朗讀語氣朗讀下面這句話，語速自然平穩，咬字清晰，並在標點符號處自然停頓：";
   }
   if (/french|français|francais/i.test(language)) {
+    if (level === 1) {
+      return "Lis chaleureusement et lentement, comme un instituteur qui raconte un livre d'images à un enfant tout débutant. Articule très clairement chaque syllabe et marque des pauses nettes aux virgules et aux points :";
+    }
+    if (level === 3) {
+      return "Lis chaleureusement et avec entrain, comme un instituteur qui raconte un livre d'images à un enfant déjà à l'aise. Garde un rythme léger et un peu plus vif que la normale tout en restant clair, en marquant des pauses naturelles aux virgules et aux points :";
+    }
     return "Lis chaleureusement, comme un instituteur qui raconte un livre d'images à un enfant débutant, à un rythme naturel et régulier, en articulant clairement et en marquant des pauses naturelles aux virgules et aux points :";
   }
-  return "Read aloud slowly and warmly, like a teacher narrating a children's picture book to a beginner learner. Articulate clearly and pause naturally at commas and periods:";
+  if (level === 1) {
+    return "Read aloud slowly and warmly, like a teacher narrating a children's picture book to a brand-new beginner. Articulate every syllable clearly and pause distinctly at commas and periods so the child can follow along:";
+  }
+  if (level === 3) {
+    return "Read aloud warmly and with a light, upbeat pace, like a teacher narrating a children's picture book to a confident young reader. Keep it crisp and a touch quicker than normal, still clear, and pause naturally at commas and periods:";
+  }
+  return "Read aloud warmly and at a natural, steady pace, like a teacher narrating a children's picture book. Articulate clearly and pause naturally at commas and periods:";
 }
 
 export async function generateSceneAudio(
   subtitle: string,
   pathname: string,
   language: string,
+  level: StoryLevel,
   gender: VoiceGender = "female"
 ): Promise<string> {
-  const styled = `${ttsStyleInstruction(language)}\n\n${subtitle}`;
+  const styled = `${ttsStyleInstruction(language, level)}\n\n${subtitle}`;
   const res = await fetchWithRetry(
     `${GEMINI_BASE}/models/gemini-3.1-flash-tts-preview:generateContent?key=${GEMINI_KEY()}`,
     {

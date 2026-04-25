@@ -8,14 +8,17 @@ export default function TeacherLayout({
 }) {
   return (
     <div className="min-h-screen">
-      <TopBar />
-      <nav className="border-b border-ink-100/70 bg-white/40 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-1 px-4 sm:px-6">
-          <TabLink href="/teacher">Stories</TabLink>
-          <TabLink href="/teacher/students">Students</TabLink>
-          <TabLink href="/teacher/settings">Settings</TabLink>
-        </div>
-      </nav>
+      <div className="sticky top-0 z-30">
+        <TopBar />
+        <nav className="border-b border-ink-100/70 bg-white/70 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-6xl items-center gap-1 px-4 sm:px-6">
+            <TabLink href="/teacher">Stories</TabLink>
+            <TabLink href="/teacher/students">Students</TabLink>
+            <TabLink href="/teacher/leaderboard">Leaderboard</TabLink>
+            <TabLink href="/teacher/settings">Settings</TabLink>
+          </div>
+        </nav>
+      </div>
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
     </div>
   );

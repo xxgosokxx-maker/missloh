@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stories, scenes } from "@/lib/db/schema";
-import { generateSceneAudio } from "@/lib/ai";
+import { clampLevel, generateSceneAudio } from "@/lib/ai";
 
 export const maxDuration = 300;
 
@@ -34,9 +34,10 @@ export async function POST(req: Request) {
 
   if (!title) return new NextResponse("Title is required", { status: 400 });
   if (!language) return new NextResponse("Language is required", { status: 400 });
-  if (!Number.isFinite(difficulty) || difficulty < 1 || difficulty > 9) {
-    return new NextResponse("Difficulty must be 1–9", { status: 400 });
+  if (!Number.isFinite(difficulty) || difficulty < 1 || difficulty > 3) {
+    return new NextResponse("Difficulty must be 1–3", { status: 400 });
   }
+  const level = clampLevel(difficulty);
   if (uploadedScenes.length === 0) {
     return new NextResponse("At least one scene is required", { status: 400 });
   }
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
     .values({
       title,
       description: "",
-      difficulty,
+      difficulty: level,
       language,
       imageStyle: "Custom",
       voice,
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
         s.subtitle.trim(),
         `stories/${story.id}/scene-${idx}.wav`,
         language,
+        level,
         voice
       ).catch((err) => {
         console.error(`[upload scene ${idx}] audio failed:`, err);

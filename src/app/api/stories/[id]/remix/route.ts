@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stories, scenes } from "@/lib/db/schema";
 import { and, asc, eq } from "drizzle-orm";
-import { generateSceneAudio, regenerateSubtitles } from "@/lib/ai";
+import { clampLevel, generateSceneAudio, regenerateSubtitles } from "@/lib/ai";
 
 export const maxDuration = 300;
 
@@ -24,6 +24,7 @@ export async function POST(
     voice?: "male" | "female";
   };
   const vox: "male" | "female" = voice === "male" ? "male" : "female";
+  const level = clampLevel(difficulty);
 
   const [source] = await db
     .select()
@@ -47,16 +48,16 @@ export async function POST(
     title: title ?? source.title,
     description: source.description,
     language,
-    difficulty,
+    difficulty: level,
     imagePrompts: sourceScenes.map((s) => s.imagePrompt),
   });
 
   const [newStory] = await db
     .insert(stories)
     .values({
-      title: title?.trim() || `${source.title} — ${language} L${difficulty}`,
+      title: title?.trim() || `${source.title} — ${language} L${level}`,
       description: source.description,
-      difficulty,
+      difficulty: level,
       language,
       imageStyle: source.imageStyle,
       voice: vox,
@@ -71,6 +72,7 @@ export async function POST(
         subtitle,
         `stories/${newStory.id}/scene-${idx}.wav`,
         language,
+        level,
         vox
       ).catch((err) => {
         console.error(`[remix scene ${idx}] audio failed:`, err);

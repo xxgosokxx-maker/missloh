@@ -75,12 +75,18 @@ export async function evaluateRecording(opts: {
   const b64 = buf.toString("base64");
 
   const lang = languageLabel(opts.language);
-  const diff = Math.max(1, Math.min(9, Math.round(opts.difficulty ?? 3)));
-  const level = diff <= 3 ? "beginner" : diff <= 6 ? "intermediate" : "advanced";
+  const diff = Math.max(1, Math.min(3, Math.round(opts.difficulty ?? 1)));
+  const level = diff === 1 ? "beginner" : diff === 2 ? "intermediate" : "advanced";
   const isMandarin = /mandarin|chinese|中文/i.test(opts.language);
+  const gradingMode =
+    diff === 1
+      ? `RELAXED grading (level 1 / beginner). Reward effort. As long as the child read the right words in roughly the right order and you can recognise the target sentence, accuracy should be at least 4. Minor mispronunciations, hesitations, or one-off slips should not drop clarity below 4. Reserve scores of 1-2 for recordings that are truly unrelated or completely unintelligible.`
+      : diff === 2
+        ? `NORMAL grading (level 2 / intermediate). Use the rubric as written, evenly. A clearly readable attempt with one or two real mispronunciations should land around 3-4; a smooth, mostly-correct read should land at 4-5; substantial word-level errors or muddled pronunciation drops to 2-3.`
+        : `DEMANDING grading (level 3 / advanced). Hold the child to a near-native standard. Expect every word to be correct AND every sound${isMandarin ? ", tone," : ""} to be crisp. Award 5 only when the read is genuinely polished — no hedged words, no weak${isMandarin ? " tones" : " consonants"}. Any noticeable error costs a point; multiple noticeable errors drop the axis to 2-3. Do not hand out 5s for "good enough" attempts at this level.`;
   const hints = languageHints(opts.language);
   const prompt = `You are a patient, encouraging pronunciation coach for a child learning ${lang}.
-The child is practicing at difficulty ${diff}/9 (${level}).
+The child is practicing at difficulty ${diff}/3 (${level}).
 Target sentence: ${opts.subtitle}
 
 ${hints ? `Language focus: ${hints}\n\n` : ""}FIRST decide if the recording is audible enough to grade. If you hear only silence, static, or a few unintelligible noises, set "audible": false and leave transcript empty; still return a score of 1 and a feedback like "Miss Luna couldn't hear you clearly — try recording again in a quieter spot." In that case do not hallucinate a transcript.
@@ -102,7 +108,7 @@ Rubric per axis:
 - 2: significant errors — many words missing or large stretches unintelligible
 - 1: unintelligible or unrelated
 
-Grade gently for beginners (difficulty 1-3): minor clarity imperfections alone should not drop clarity below 4. Grade more strictly at advanced levels (7-9).
+Grading mode for THIS recording: ${gradingMode}
 
 Feedback: ONE warm sentence in English aimed at the child, naming ONE specific ${isMandarin ? "tone, syllable, or sound" : "sound, syllable, or stress pattern"} to work on. Examples of tone: ${isMandarin ? `"the second tone in ni hao should rise — make your voice go up like asking a question"` : `"try the 'th' in 'three' — put your tongue between your teeth and blow softly"`}. CRITICAL: do NOT use IPA phonetic symbols (no /θ/, /ʃ/, /ɑ/, etc.). Spell sounds in plain English letters or use the actual letters from the target word. For Mandarin, refer to syllables in pinyin (without IPA) or in the Chinese script. No vague filler, no "keep trying". If the child read it well, a short warm congratulation naming what they did well is fine.`;
 

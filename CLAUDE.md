@@ -19,7 +19,7 @@ An AI-powered language-learning web app: teachers generate bilingual picture-boo
 ## 2. Feature Surface
 
 ### Teacher
-- **Story generation** (`/teacher/stories/new`) — title, description, difficulty (1-9), language, art style (15 options incl. Ghibli / Disney / Sanrio / Pokemon), narrator voice.
+- **Story generation** (`/teacher/stories/new`) — title, description, level (1-3: beginner / intermediate / advanced), language, art style (15 options incl. Ghibli / Disney / Sanrio / Pokemon), narrator voice. The level also drives TTS pace (slow / normal / upbeat).
 - **Story upload** (`/teacher/stories/upload`) — upload page images for an existing book; captions transcribed, audio generated. Client-side image compression via `browser-image-compression`.
 - **Story library** (`/teacher`) — sorted by language → difficulty. Collapsible `<details>` cards. Per-story: Rename, Delete, Assign to student, Remix.
 - **Scene editor** (`/teacher/stories/[id]`) — modify caption (with/without regenerating audio), record your own voiceover instead of TTS.
