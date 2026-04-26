@@ -33,9 +33,6 @@ export function NewStoryButton() {
         className="btn-primary"
       >
         + New story
-        <span aria-hidden className="text-xs opacity-80">
-          ▾
-        </span>
       </button>
       {open && (
         <div
