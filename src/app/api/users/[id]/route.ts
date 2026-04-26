@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 
 export async function PATCH(
   req: Request,
@@ -39,6 +39,12 @@ export async function PATCH(
   if (Object.keys(update).length === 0) {
     return new NextResponse("No updatable fields", { status: 400 });
   }
+
+  const [target] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, id), eq(users.role, "student")));
+  if (!target) return new NextResponse("Not found", { status: 404 });
 
   await db.update(users).set(update).where(eq(users.id, id));
 

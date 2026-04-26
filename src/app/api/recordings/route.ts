@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { recordings, assignments } from "@/lib/db/schema";
+import { recordings, assignments, scenes } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { isOwnBlobUrl } from "@/lib/blob";
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   }
 
   const [assignment] = await db
-    .select()
+    .select({ id: assignments.id, storyId: assignments.storyId })
     .from(assignments)
     .where(
       and(
@@ -31,6 +31,16 @@ export async function POST(req: Request) {
       )
     );
   if (!assignment) return new NextResponse("Forbidden", { status: 403 });
+
+  const [scene] = await db
+    .select({ id: scenes.id })
+    .from(scenes)
+    .where(and(eq(scenes.id, sceneId), eq(scenes.storyId, assignment.storyId)));
+  if (!scene) {
+    return new NextResponse("Scene does not belong to this assignment", {
+      status: 400,
+    });
+  }
 
   const [row] = await db
     .insert(recordings)
