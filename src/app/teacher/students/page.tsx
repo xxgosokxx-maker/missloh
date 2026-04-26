@@ -13,6 +13,7 @@ import { DeleteStudentButton } from "@/components/DeleteStudentButton";
 import { ClickBarrier } from "@/components/ClickBarrier";
 import { StudentTagSelect } from "@/components/StudentTagSelect";
 import { displayName } from "@/lib/names";
+import { timeAgo } from "@/lib/timeAgo";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function TeacherStudentsPage() {
       email: users.email,
       authKind: users.authKind,
       tag: users.tag,
+      lastLoginAt: users.lastLoginAt,
     })
     .from(users)
     .where(eq(users.role, "student"))
@@ -96,6 +98,10 @@ export default async function TeacherStudentsPage() {
                       {student.authKind === "pin"
                         ? "PIN login"
                         : student.email}
+                      <span className="mx-1.5 text-ink-300">·</span>
+                      <span title={student.lastLoginAt?.toLocaleString() ?? "never signed in"}>
+                        Last seen {timeAgo(student.lastLoginAt)}
+                      </span>
                     </div>
                   </div>
                   <span className="badge shrink-0">

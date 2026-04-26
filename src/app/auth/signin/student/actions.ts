@@ -72,6 +72,10 @@ export async function studentSignInAction(
   }
 
   await recordAttempt(ip, "pin", true);
+  await db
+    .update(users)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(users.id, matchedId));
   await createStudentSession(matchedId);
   redirect("/student");
 }

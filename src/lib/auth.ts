@@ -53,6 +53,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         .set({ role: roleFor(user.email) })
         .where(eq(users.id, user.id));
     },
+    async signIn({ user }) {
+      if (!user.id) return;
+      await db
+        .update(users)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(users.id, user.id));
+    },
   },
   callbacks: {
     async signIn({ account, profile, user }) {
