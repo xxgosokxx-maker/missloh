@@ -61,7 +61,7 @@ export default async function StudentHomePage() {
 
   return (
     <div className="grid gap-8 md:grid-cols-[260px_1fr]">
-      <aside className="space-y-4 md:sticky md:top-24 md:self-start">
+      <aside className="order-2 space-y-4 md:order-none md:sticky md:top-24 md:self-start">
         <div className="card p-5">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg tracking-tight text-ink-900">
@@ -77,7 +77,7 @@ export default async function StudentHomePage() {
         </div>
       </aside>
 
-      <div className="space-y-8">
+      <div className="order-1 space-y-8 md:order-none">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-display text-3xl tracking-tight text-ink-900">
