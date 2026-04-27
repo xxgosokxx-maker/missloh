@@ -14,6 +14,7 @@ import { ClickBarrier } from "@/components/ClickBarrier";
 import { StudentTagSelect } from "@/components/StudentTagSelect";
 import { displayName } from "@/lib/names";
 import { timeAgo } from "@/lib/timeAgo";
+import { Avatar } from "@/components/Avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function TeacherStudentsPage() {
       authKind: users.authKind,
       tag: users.tag,
       lastLoginAt: users.lastLoginAt,
+      avatarUrl: users.avatarUrl,
     })
     .from(users)
     .where(eq(users.role, "student"))
@@ -81,15 +83,16 @@ export default async function TeacherStudentsPage() {
           const theirs = myAssignments.filter(
             (a) => a.studentId === student.id
           );
-          const initial = student.name?.[0]?.toUpperCase() ?? "·";
           const shortName = displayName(student.name);
           return (
             <li key={student.id}>
               <details className="group card !p-0 overflow-hidden">
                 <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent-300 to-brand-400 text-xs font-semibold text-white shadow-soft">
-                    {initial}
-                  </span>
+                  <Avatar
+                    url={student.avatarUrl}
+                    name={student.name}
+                    size="md"
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-ink-900">
                       {shortName}

@@ -1,8 +1,10 @@
 import { displayName } from "@/lib/names";
+import { Avatar } from "@/components/Avatar";
 
 export type LeaderboardRow = {
   studentId: string;
   name: string | null;
+  avatarUrl: string | null;
   stars: number;
 };
 
@@ -46,6 +48,7 @@ export function Leaderboard({
               >
                 {i + 1}
               </span>
+              <Avatar url={row.avatarUrl} name={row.name} size="sm" />
               <span
                 className={`truncate ${
                   isMe ? "font-semibold text-ink-900" : "text-ink-700"

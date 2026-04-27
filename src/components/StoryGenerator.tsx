@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ART_STYLES } from "@/lib/avatars";
 
 export function StoryGenerator() {
   const router = useRouter();
@@ -68,21 +69,11 @@ export function StoryGenerator() {
       <label>
         <span className="label">Art style</span>
         <select required name="imageStyle" defaultValue="Ghibli" className="input">
-          <option value="Marvel">Marvel</option>
-          <option value="Disney">Disney</option>
-          <option value="Ghibli">Ghibli</option>
-          <option value="Lego">Lego</option>
-          <option value="Toriyama">Toriyama</option>
-          <option value="Chibi / Super Deformed">Chibi / Super Deformed</option>
-          <option value="Ligne Claire">Ligne Claire</option>
-          <option value="90s Cel-Shaded Anime">90s Cel-Shaded Anime</option>
-          <option value="CalArts">CalArts</option>
-          <option value="Ukiyo-e">Ukiyo-e</option>
-          <option value="90s Mecha">90s Mecha</option>
-          <option value="Classic Shonen">Classic Shonen</option>
-          <option value="Shojo">Shojo</option>
-          <option value="Sanrio">Sanrio</option>
-          <option value="Pokemon">Pokemon</option>
+          {ART_STYLES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
         </select>
       </label>
       <label>

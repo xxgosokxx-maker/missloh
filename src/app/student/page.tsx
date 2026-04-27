@@ -5,6 +5,8 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { StarRow } from "@/components/StarRow";
 import { Leaderboard } from "@/components/Leaderboard";
+import { Avatar } from "@/components/Avatar";
+import { displayName } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,11 @@ export default async function StudentHomePage() {
     .orderBy(desc(assignments.createdAt));
 
   const [me] = await db
-    .select({ tag: users.tag })
+    .select({
+      name: users.name,
+      tag: users.tag,
+      avatarUrl: users.avatarUrl,
+    })
     .from(users)
     .where(eq(users.id, session!.user.id));
   const myTag = me?.tag ?? null;
@@ -36,23 +42,25 @@ export default async function StudentHomePage() {
         .select({
           studentId: users.id,
           name: users.name,
+          avatarUrl: users.avatarUrl,
           stars: sql<number>`coalesce(sum(${assignments.rating}), 0)`.as("stars"),
         })
         .from(users)
         .leftJoin(assignments, eq(assignments.studentId, users.id))
         .where(and(eq(users.role, "student"), eq(users.tag, myTag)))
-        .groupBy(users.id, users.name)
+        .groupBy(users.id, users.name, users.avatarUrl)
         .orderBy(desc(sql`stars`), users.name)
     : await db
         .select({
           studentId: users.id,
           name: users.name,
+          avatarUrl: users.avatarUrl,
           stars: sql<number>`coalesce(sum(${assignments.rating}), 0)`.as("stars"),
         })
         .from(users)
         .leftJoin(assignments, eq(assignments.studentId, users.id))
         .where(eq(users.id, session!.user.id))
-        .groupBy(users.id, users.name)
+        .groupBy(users.id, users.name, users.avatarUrl)
         .orderBy(desc(sql`stars`), users.name);
   const leaderboard = leaderboardRaw.map((r) => ({
     ...r,
@@ -79,13 +87,32 @@ export default async function StudentHomePage() {
 
       <div className="order-1 space-y-8 md:order-none">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="font-display text-3xl tracking-tight text-ink-900">
-              Your stories
-            </h1>
-            <p className="mt-1 text-sm text-ink-500">
-              Tap a story to listen, read, and record yourself.
-            </p>
+          <div className="flex min-w-0 items-center gap-4">
+            <Link
+              href="/student/settings"
+              className="shrink-0"
+              title="Change avatar"
+            >
+              <Avatar
+                url={me?.avatarUrl ?? null}
+                name={me?.name ?? null}
+                size="lg"
+              />
+            </Link>
+            <div className="min-w-0">
+              <h1 className="font-display text-3xl tracking-tight text-ink-900">
+                Hi, {displayName(me?.name)}
+              </h1>
+              <p className="mt-1 text-sm text-ink-500">
+                Tap a story to listen, read, and record yourself.{" "}
+                <Link
+                  href="/student/settings"
+                  className="font-medium text-brand-600 hover:underline"
+                >
+                  Change avatar
+                </Link>
+              </p>
+            </div>
           </div>
           <Link href="/student/guide" className="btn-secondary shrink-0">
             <span aria-hidden>?</span>

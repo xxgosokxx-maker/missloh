@@ -10,12 +10,13 @@ async function boardFor(tag: "French" | "Mandarin") {
     .select({
       studentId: users.id,
       name: users.name,
+      avatarUrl: users.avatarUrl,
       stars: sql<number>`coalesce(sum(${assignments.rating}), 0)`.as("stars"),
     })
     .from(users)
     .leftJoin(assignments, eq(assignments.studentId, users.id))
     .where(and(eq(users.role, "student"), eq(users.tag, tag)))
-    .groupBy(users.id, users.name)
+    .groupBy(users.id, users.name, users.avatarUrl)
     .orderBy(desc(sql`stars`), users.name);
   return rows.map((r) => ({ ...r, stars: Number(r.stars) || 0 }));
 }

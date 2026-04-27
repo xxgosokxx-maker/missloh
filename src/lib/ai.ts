@@ -254,6 +254,62 @@ ${NO_TEXT_RULE}`;
   );
 }
 
+export async function renderAvatarImage(opts: {
+  style: string;
+  gender: "male" | "female";
+  index: number;
+}): Promise<RenderedImage> {
+  const NO_TEXT_RULE =
+    "STRICT RULE: the image must contain ZERO written text of any kind. No letters, words, numbers, captions, signs, labels, logos, watermarks, or signatures.";
+
+  const childWord = opts.gender === "male" ? "boy" : "girl";
+  const textPart = `Generate a single character portrait avatar for a children's language-learning app.
+Art style: ${opts.style}.
+Subject: a friendly, kind-looking ${childWord} aged about 8, head-and-shoulders portrait, looking towards the camera with a warm smile.
+Composition: square framing, the character centered and clearly visible, simple soft pastel background (no scenery, no props, no other characters).
+Variation seed ${opts.index}: make this distinct from other variants — different hair colour/style, skin tone, and outfit colour.
+Vibrant but soft colours suitable for kids. No panels, no borders, no frames.
+${NO_TEXT_RULE}`;
+
+  const SAFETY_OFF = [
+    "HARM_CATEGORY_HARASSMENT",
+    "HARM_CATEGORY_HATE_SPEECH",
+    "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+    "HARM_CATEGORY_DANGEROUS_CONTENT",
+    "HARM_CATEGORY_CIVIC_INTEGRITY",
+  ].map((category) => ({ category, threshold: "BLOCK_ONLY_HIGH" }));
+
+  const res = await fetchWithRetry(
+    `${GEMINI_BASE}/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_KEY()}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: textPart }] }],
+        generationConfig: { responseModalities: ["IMAGE"] },
+        safetySettings: SAFETY_OFF,
+      }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(`Gemini avatar failed: ${res.status} ${await res.text()}`);
+  }
+  const json = (await res.json()) as {
+    candidates?: {
+      content?: {
+        parts?: { inlineData?: { data?: string; mimeType?: string } }[];
+      };
+    }[];
+  };
+  const part = json.candidates?.[0]?.content?.parts?.find(
+    (p) => p.inlineData?.data
+  )?.inlineData;
+  if (!part?.data) {
+    throw new Error("Gemini avatar returned no image data");
+  }
+  return { data: part.data, mime: part.mimeType ?? "image/png" };
+}
+
 export async function uploadRenderedImage(
   img: RenderedImage,
   pathname: string

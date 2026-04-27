@@ -13,6 +13,7 @@ import Link from "next/link";
 import { StoryPlayer } from "@/components/StoryPlayer";
 import { EvaluateStoryButton } from "@/components/EvaluateStoryButton";
 import { displayName } from "@/lib/names";
+import { Avatar } from "@/components/Avatar";
 
 export default async function TeacherReviewPage({
   params,
@@ -34,7 +35,7 @@ export default async function TeacherReviewPage({
   if (!story) notFound();
 
   const [student] = await db
-    .select({ id: users.id, name: users.name })
+    .select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl })
     .from(users)
     .where(eq(users.id, studentId));
   if (!student) notFound();
@@ -83,11 +84,20 @@ export default async function TeacherReviewPage({
         <div className="mt-2 text-xs uppercase tracking-wide text-ink-500">
           Reviewing
         </div>
-        <h1 className="font-display text-4xl tracking-tight text-ink-900">
-          {displayName(student.name)}
-        </h1>
-        <div className="mt-1 text-sm text-ink-600">
-          on <span className="font-medium text-ink-800">{story.title}</span>
+        <div className="mt-1 flex items-center gap-3">
+          <Avatar
+            url={student.avatarUrl}
+            name={student.name}
+            size="lg"
+          />
+          <div className="min-w-0">
+            <h1 className="font-display text-4xl tracking-tight text-ink-900">
+              {displayName(student.name)}
+            </h1>
+            <div className="mt-1 text-sm text-ink-600">
+              on <span className="font-medium text-ink-800">{story.title}</span>
+            </div>
+          </div>
         </div>
         {assignment && (
           <div className="mt-4">

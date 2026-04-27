@@ -31,6 +31,7 @@ export const users = pgTable("users", {
   authKind: text("auth_kind").notNull().default("google"),
   tag: text("tag"),
   lastLoginAt: timestamp("last_login_at", { mode: "date" }),
+  avatarUrl: text("avatar_url"),
 });
 
 export const classCodes = pgTable("class_codes", {
