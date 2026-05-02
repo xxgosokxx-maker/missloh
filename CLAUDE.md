@@ -30,7 +30,7 @@ An AI-powered language-learning web app: teachers generate bilingual picture-boo
 ### Student
 - **PIN sign-in** (`/auth/signin/student`) — class code + 6-digit PIN. No email required.
 - **Dashboard** (`/student`) — assigned stories + class leaderboard (ranked by total stars, own row highlighted).
-- **Practice** (`/student/story/[id]`) — illustrated reader. "Listen" plays native-voice TTS. "Record" captures up to 30s, uploads direct to Vercel Blob, saves DB row. Mobile-first UI.
+- **Practice** (`/student/story/[id]`) — illustrated reader. "Listen" plays native-voice TTS. "Record" captures up to 40s, uploads direct to Vercel Blob, saves DB row. Mobile-first UI.
 
 ### Public
 - **Landing page** (`/`) — hero + rotating 4-image gallery pulled from live scene library.

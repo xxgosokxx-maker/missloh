@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RecordingScore } from "@/components/RecordingScore";
 
-const MAX_RECORD_SECONDS = 30;
+const MAX_RECORD_SECONDS = 40;
 
 export type PlayerScene = {
   id: string;
