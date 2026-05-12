@@ -113,7 +113,7 @@ Grading mode for THIS recording: ${gradingMode}
 Feedback: ONE warm sentence in English aimed at the child, naming ONE specific ${isMandarin ? "tone, syllable, or sound" : "sound, syllable, or stress pattern"} to work on. Examples of tone: ${isMandarin ? `"the second tone in ni hao should rise — make your voice go up like asking a question"` : `"try the 'th' in 'three' — put your tongue between your teeth and blow softly"`}. CRITICAL: do NOT use IPA phonetic symbols (no /θ/, /ʃ/, /ɑ/, etc.). Spell sounds in plain English letters or use the actual letters from the target word. For Mandarin, refer to syllables in pinyin (without IPA) or in the Chinese script. No vague filler, no "keep trying". If the child read it well, a short warm congratulation naming what they did well is fine.`;
 
   const res = await fetchWithRetry(
-    `${GEMINI_BASE}/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY()}`,
+    `${GEMINI_BASE}/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_KEY()}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

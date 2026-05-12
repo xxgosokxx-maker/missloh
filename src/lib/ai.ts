@@ -85,7 +85,7 @@ export async function generateStoryScenes(input: GenerateStoryInput) {
   const lang = languageLabel(input.language);
   const level = clampLevel(input.difficulty);
   const { object } = await generateObject({
-    model: google("gemini-3.1-pro-preview"),
+    model: google("gemini-3.1-flash-lite"),
     schema: StorySchema,
     prompt: `You are a language-learning picture book author.
 Write a short picture book for a student learning ${lang}.
@@ -116,7 +116,7 @@ export async function regenerateSubtitles(opts: {
   const lang = languageLabel(opts.language);
   const level = clampLevel(opts.difficulty);
   const { object } = await generateObject({
-    model: google("gemini-3.1-pro-preview"),
+    model: google("gemini-3.1-flash-lite"),
     schema: SubtitleListSchema,
     prompt: `You are remixing an existing picture book into ${lang} for a student at difficulty ${level} (1 = beginner, 3 = advanced near-native).
 - Level 1: very short sentences, present tense, high-frequency vocabulary only
@@ -190,7 +190,7 @@ ${NO_TEXT_RULE}`;
   ].map((category) => ({ category, threshold: "BLOCK_ONLY_HIGH" }));
 
   const res = await fetchWithRetry(
-    `${GEMINI_BASE}/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_KEY()}`,
+    `${GEMINI_BASE}/models/gemini-3.1-flash-image-preview:generateContent?key=${GEMINI_KEY()}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -280,7 +280,7 @@ ${NO_TEXT_RULE}`;
   ].map((category) => ({ category, threshold: "BLOCK_ONLY_HIGH" }));
 
   const res = await fetchWithRetry(
-    `${GEMINI_BASE}/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_KEY()}`,
+    `${GEMINI_BASE}/models/gemini-3.1-flash-image-preview:generateContent?key=${GEMINI_KEY()}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

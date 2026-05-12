@@ -48,8 +48,8 @@ An AI-powered language-learning web app: teachers generate bilingual picture-boo
 | Schema sync | `bunx drizzle-kit push` (no migrations directory — direct schema sync) |
 | Auth | **NextAuth v5** (`next-auth@5.0.0-beta.25`) with `DrizzleAdapter`. Two providers: Google OAuth and a custom PIN credentials provider. |
 | File storage | **Vercel Blob** (`@vercel/blob/client`, `access: "public"`, upload via `handleUploadUrl: "/api/upload"`). |
-| AI generation | Gemini 3.1 Flash for story text. Gemini image generation for illustrations. Gemini 3.1 Flash TTS (Kore voices) for narration. |
-| AI scoring | Gemini 2.5 Flash audio-understanding via REST `generateContent` with `inlineData` (base64) + `responseMimeType: "application/json"` + `responseSchema`. See `src/lib/aiScore.ts`. |
+| AI generation | `gemini-3.1-flash-lite` for story text. `gemini-3.1-flash-image-preview` for illustrations. `gemini-3.1-flash-tts-preview` (Kore voices) for narration. |
+| AI scoring | `gemini-3.1-flash-lite` audio-understanding via REST `generateContent` with `inlineData` (base64) + `responseMimeType: "application/json"` + `responseSchema`. See `src/lib/aiScore.ts`. |
 | Hosting | Vercel (Fluid Compute; eval endpoint uses `maxDuration = 120`). |
 
 ---
